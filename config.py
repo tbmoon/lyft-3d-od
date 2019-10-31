@@ -17,6 +17,7 @@ class config:
 
     # voxel_size
     voxel_size = (0.2, 0.2, 0.5)
+    max_pointclouds = 40
 
     num_epochs = 1
     batch_size = 16
