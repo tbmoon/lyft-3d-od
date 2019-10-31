@@ -9,6 +9,7 @@ sample_submission.csv
 
 __pycache__
 tmp
+data
 logs
 models
 outputs
