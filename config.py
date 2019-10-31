@@ -6,10 +6,18 @@ class config:
 
     model_name = 'batse_model'
 
-    # Some hyperparameters we'll need to define for the system.
-    voxel_size = (0.4, 0.4, 1.5)
-    z_offset = -2.0
-    bev_shape = (336, 336, 3)
+    # points cloud ranges w.r.t car frame.
+    # sample: b71497fc753ec107ca1ca6427f2513c550835aa244504550a5b0e2edd341f57d
+    # x: -82.12028503417969 102.64202499389648
+    # y: -78.11154389381409 84.82943511009216
+    # z: -5.203974485397339 8.140005350112915
+    xrange = (-100, 100)
+    yrange = (-100, 100)
+    zrange = (-5, 10)
 
+    # voxel_size
+    voxel_size = (0.2, 0.2, 0.5)
+
+    num_epochs = 1
     batch_size = 16
-    num_workers = 16
+    num_workers = 1
