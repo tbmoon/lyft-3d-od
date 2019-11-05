@@ -3,22 +3,74 @@ from lyft_dataset_sdk.utils.data_classes import Quaternion
 from config import config as cfg
 
 
-def move_boxes_to_car_frame(boxes3d, ego_pose):
-    '''
-    Move boxes from world frame to car frame.
-    '''
-    translation = -np.array(ego_pose['translation'])
-    rotation = Quaternion(ego_pose['rotation']).inverse
+def anchors_center_to_bottom_corner(anchors):
+    # anchors: [num_anchors, 7]
+    # - num_anchors = feature_map_size * anchor_two_rotations.
+    # - 7: anchor_center_x, anchor_center_y, anchor_center_z,
+    #      anchor_length, anchor_width, anchor_height,
+    #      anchor_yaw
+    num_anchors = anchors.shape[0]
+    anchors_bottom_corner = np.zeros((num_anchors, 4, 2))  # (num_anchors, 4 bottom corners, 2 xy)
+    for i in range(num_anchors):
+        # Re-created 3D anchor box in the sensor frame.
+        anchor = anchors[i]
+        anchor_center = anchor[0:3]
+        anchor_length, anchor_width, anchor_height = anchor[3:6]
+        anchor_yaw = anchor[-1]
 
-    for box3d in boxes3d:
-        box3d.translate(translation)
-        box3d.rotate(rotation)
-    return boxes3d
+        # Refer "https://github.com/lyft/nuscenes-devkit/blob/master/lyft_dataset_sdk/utils/data_classes.py".
+        # - "def corners(self, wlh_factor: float = 1.0)".
+        # - "def bottom_corners(self)".
+        Box = np.array([anchor_length / 2 * np.array([1, 1, -1, -1]),
+                        anchor_width  / 2 * np.array([-1, 1, 1, -1])])
+
+        # Rotate anchor box around the yaw (z) axis of the body.
+        rotMat = np.array([[np.cos(anchor_yaw), -np.sin(anchor_yaw)],
+                           [np.sin(anchor_yaw),  np.cos(anchor_yaw)]])
+        Box = np.dot(rotMat, Box)
+
+        # Translate anchor box to the sensor frame in the x-y plane.
+        Box = Box + np.tile(anchor_center[:2], (4, 1)).T
+        anchors_bottom_corner[i] = Box.transpose()
+
+    return anchors_bottom_corner
 
 
-def filter_pointclouds_boxes3d(pointclouds, boxes3d=None):
+def boxes2d_four_corners_to_two_corners(boxes2d_corner):
+    # boxes2d_corner: [num_boxes, 4 corners, 2 xy]
+    # boxes2d_two_corner: [num_boxes, 4]
+    #   where, 4 means (2 xy) * (2 corners): x_min, y_min, x_max, y_max
+    assert boxes_corner.ndim == 3
+    num_boxes = boxes_corner.shape[0]
+    boxes2d_two_corner = np.zeros((num_boxes, 4))
+    boxes2d_two_corner[:, 0] = np.min(boxes_corner[:, :, 0], axis=1)
+    boxes2d_two_corner[:, 1] = np.min(boxes_corner[:, :, 1], axis=1)
+    boxes2d_two_corner[:, 2] = np.max(boxes_corner[:, :, 0], axis=1)
+    boxes2d_two_corner[:, 3] = np.max(boxes_corner[:, :, 1], axis=1)
+
+    return boxes2d_two_corner
+
+
+def convert_gt_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibrated_sensor):
     '''
-    Filter pointclouds and/or boxes3d within a specific range.
+    Convert gt_boxes3d from the global frame to the sensor frame.
+    '''
+    # From the global frame to the car frame.
+    for gt_box3d in gt_boxes3d:
+        gt_box3d.translate(-np.array(ego_pose['translation']))
+        gt_box3d.rotate(Quaternion(ego_pose['rotation']).inverse)
+
+    # From the car frame to the sensor frame.
+    for gt_box3d in gt_boxes3d:
+        gt_box3d.translate(-np.array(calibrated_sensor["translation"]))
+        gt_box3d.rotate(Quaternion(calibrated_sensor["rotation"]).inverse)
+
+    return gt_boxes3d
+
+
+def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None):
+    '''
+    Filter pointclouds and/or gt_boxes3d within a specific range.
     '''
     pxs = pointclouds[:, 0]
     pys = pointclouds[:, 1]
@@ -30,19 +82,19 @@ def filter_pointclouds_boxes3d(pointclouds, boxes3d=None):
     filter_xy = np.intersect1d(filter_x, filter_y)
     filter_xyz = np.intersect1d(filter_xy, filter_z)
 
-    if boxes3d is not None:
+    if gt_boxes3d is not None:
         # True if at least one corner is within a specific range.
-        box_corners_3d = []
-        for box3d in boxes3d:
-            # box_corner_3d: [3 xyz, 8 corners] -> [8 corners, 3 xyz]
-            box_corner_3d = box3d.corners().transpose(1, 0)
-            box_corners_3d.append(box_corner_3d)
-        # box_corners_3d: [num_boxes, 8 corners, 3 xyz]
-        box_corners_3d = np.array(box_corners_3d)
-        box_x = (box_corners_3d[:, :, 0] >= cfg.xrange[0]) & (box_corners_3d[:, :, 0] < cfg.xrange[1])
-        box_y = (box_corners_3d[:, :, 1] >= cfg.yrange[0]) & (box_corners_3d[:, :, 1] < cfg.yrange[1])
-        box_z = (box_corners_3d[:, :, 2] >= cfg.zrange[0]) & (box_corners_3d[:, :, 2] < cfg.zrange[1])
+        gt_boxes3d_corner = []
+        for gt_box3d in gt_boxes3d:
+            # gt_box3d_corner: [3 xyz, 8 corners] -> [8 corners, 3 xyz]
+            gt_box3d_corner = gt_box3d.corners().transpose(1, 0)
+            gt_boxes3d_corner.append(gt_box3d_corner)
+        # gt_boxes3d_corners: [num_boxes, 8 corners, 3 xyz]
+        gt_boxes3d_corner = np.array(gt_boxes3d_corner)
+        box_x = (gt_boxes3d_corner[:, :, 0] >= cfg.xrange[0]) & (gt_boxes3d_corner[:, :, 0] < cfg.xrange[1])
+        box_y = (gt_boxes3d_corner[:, :, 1] >= cfg.yrange[0]) & (gt_boxes3d_corner[:, :, 1] < cfg.yrange[1])
+        box_z = (gt_boxes3d_corner[:, :, 2] >= cfg.zrange[0]) & (gt_boxes3d_corner[:, :, 2] < cfg.zrange[1])
         box_xyz = np.sum(box_x & box_y & box_z, axis=1)
-        return pointclouds[filter_xyz], box_corners_3d[box_xyz>0]
+        return pointclouds[filter_xyz], gt_boxes3d_corner[box_xyz>0]
 
     return pointclouds[filter_xyz]
