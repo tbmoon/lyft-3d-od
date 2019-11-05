@@ -36,17 +36,28 @@ def anchors_center_to_bottom_corner(anchors):
     return anchors_bottom_corner
 
 
+def gt_boxes3d_center_to_bottom_corner(gt_boxes3d):
+    num_boxes = len(gt_boxes3d)
+    gt_boxes_bottom_corner = np.zeros((num_boxes, 4, 2))  # [num_boxess, 4 bottom corners, 2 xy]    
+    for i, gt_box3d in enumerate(gt_boxes3d):
+        gt_box_bottom_corner = gt_box3d.bottom_corners()  # [3 xyz, 4 bottom corners]
+        gt_box_bottom_corner = gt_box_bottom_corner.transpose(1, 0)[:, :2]  # [4 bottom corners, 2 xy]
+        gt_boxes_bottom_corner[i] = gt_box_bottom_corner
+
+    return gt_boxes_bottom_corner
+
+
 def boxes2d_four_corners_to_two_corners(boxes2d_corner):
     # boxes2d_corner: [num_boxes, 4 corners, 2 xy]
     # boxes2d_two_corner: [num_boxes, 4]
     #   where, 4 means (2 xy) * (2 corners): x_min, y_min, x_max, y_max
-    assert boxes_corner.ndim == 3
-    num_boxes = boxes_corner.shape[0]
+    assert boxes2d_corner.ndim == 3
+    num_boxes = boxes2d_corner.shape[0]
     boxes2d_two_corner = np.zeros((num_boxes, 4))
-    boxes2d_two_corner[:, 0] = np.min(boxes_corner[:, :, 0], axis=1)
-    boxes2d_two_corner[:, 1] = np.min(boxes_corner[:, :, 1], axis=1)
-    boxes2d_two_corner[:, 2] = np.max(boxes_corner[:, :, 0], axis=1)
-    boxes2d_two_corner[:, 3] = np.max(boxes_corner[:, :, 1], axis=1)
+    boxes2d_two_corner[:, 0] = np.min(boxes2d_corner[:, :, 0], axis=1)
+    boxes2d_two_corner[:, 1] = np.min(boxes2d_corner[:, :, 1], axis=1)
+    boxes2d_two_corner[:, 2] = np.max(boxes2d_corner[:, :, 0], axis=1)
+    boxes2d_two_corner[:, 3] = np.max(boxes2d_corner[:, :, 1], axis=1)
 
     return boxes2d_two_corner
 
@@ -75,12 +86,12 @@ def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None):
     pxs = pointclouds[:, 0]
     pys = pointclouds[:, 1]
     pzs = pointclouds[:, 2]
-
     filter_x = np.where((pxs >= cfg.xrange[0]) & (pxs < cfg.xrange[1]))[0]
     filter_y = np.where((pys >= cfg.yrange[0]) & (pys < cfg.yrange[1]))[0]
     filter_z = np.where((pzs >= cfg.zrange[0]) & (pzs < cfg.zrange[1]))[0]
     filter_xy = np.intersect1d(filter_x, filter_y)
     filter_xyz = np.intersect1d(filter_xy, filter_z)
+    pointclouds = pointclouds[filter_xyz]
 
     if gt_boxes3d is not None:
         # True if at least one corner is within a specific range.
@@ -95,6 +106,9 @@ def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None):
         box_y = (gt_boxes3d_corner[:, :, 1] >= cfg.yrange[0]) & (gt_boxes3d_corner[:, :, 1] < cfg.yrange[1])
         box_z = (gt_boxes3d_corner[:, :, 2] >= cfg.zrange[0]) & (gt_boxes3d_corner[:, :, 2] < cfg.zrange[1])
         box_xyz = np.sum(box_x & box_y & box_z, axis=1)
-        return pointclouds[filter_xyz], gt_boxes3d_corner[box_xyz>0]
+        box_xyz = np.array([i for i, val in enumerate(box_xyz) if val], dtype=int)
+        gt_boxes3d = [gt_boxes3d[i] for i in box_xyz]
 
-    return pointclouds[filter_xyz]
+        return pointclouds, gt_boxes3d
+
+    return pointclouds

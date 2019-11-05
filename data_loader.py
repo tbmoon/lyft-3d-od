@@ -6,7 +6,8 @@ import pandas as pd
 import torch
 import torch.utils.data as data
 
-from cython_bbox import bbox_overlaps
+#from cython_bbox import bbox_overlaps
+from box_overlaps import bbox_overlaps
 from lyft_dataset_sdk.lyftdataset import LyftDataset
 from lyft_dataset_sdk.utils.data_classes import LidarPointCloud, Quaternion
 from lyft_dataset_sdk.utils.geometry_utils import transform_matrix
@@ -123,22 +124,32 @@ class LyftLevel5Dataset(data.Dataset):
         neg_equal_one = np.zeros((*self.feature_map_shape, self.anchor_two_rotations))
         targets = np.zeros((*self.feature_map_shape, 7 * self.anchor_two_rotations))
 
-        print("::::::::::::****************************:::::::::::::::::::::")
-        print(gt_boxes3d[0].center[0])
-        #gt_boxes3d_xyzlwhr = [[gt_box3d.center[0],
-        #                       gt_box3d.center[1],
-        #                       gt_box3d.center[2],
-        #                       gt_box3d.wlh[1],
-        #                       gt_box3d.wlh[0],
-        #                       gt_box3d.wlh[2],
-        #                       gt_box3d.orientation.radians] for gt_box3d in gt_boxes3d]
+        gt_boxes3d_xyzlwhr = [[gt_box3d.center[0],
+                               gt_box3d.center[1],
+                               gt_box3d.center[2],
+                               gt_box3d.wlh[1],
+                               gt_box3d.wlh[0],
+                               gt_box3d.wlh[2],
+                               gt_box3d.orientation.radians] for gt_box3d in gt_boxes3d]
 
         # Only taken into account rotation around yaw axis.
         # It means bottom-corners equal to top-corner.
-        anchors_corner = utils.anchors_center_to_bottom_corner(self.anchors)
+        anchors_bottom_corner = utils.anchors_center_to_bottom_corner(self.anchors)
+        gt_boxes_bottom_corner = utils.gt_boxes3d_center_to_bottom_corner(gt_boxes3d)
 
-        #anchor_boxes2d = boxes2d_four_corners_to_two_corners(anchors_corner)
-        #gt_boxes2d = boxes2d_four_corners_to_two_corners(gt_boxes3d) 
+        anchor_boxes2d = utils.boxes2d_four_corners_to_two_corners(anchors_bottom_corner)
+        gt_boxes2d = utils.boxes2d_four_corners_to_two_corners(gt_boxes_bottom_corner) 
+
+        #iou = bbox_overlaps(np.ascontiguousarray(anchor_boxes2d, dtype=np.float32),
+        #                    np.ascontiguousarray(gt_boxes2d, dtype=np.float32))
+        
+        iou = bbox_overlaps(np.ascontiguousarray(anchor_boxes2d).astype(np.float32),
+                            np.ascontiguousarray(gt_boxes2d).astype(np.float32))
+        
+        print(iou)
+        
+        
+        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 
         
     
@@ -165,17 +176,14 @@ class LyftLevel5Dataset(data.Dataset):
         #pointclouds, gt_box3d = aug_data(pointclouds, gt_box3d)
 
         # Filter point clouds and gt_boxes3d within a specific range.
-        # gt_boxes3d: [num_boxes, 8 corners, 3 xyz]
         pointclouds, gt_boxes3d = utils.filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d)
 
         # Voxelize point clouds.
         voxel_features, voxel_coords = self.voxelize_pointclouds(pointclouds)
 
         # Encode bounding boxes.
-        #pos_equal_one, neg_equal_one, targets = self.cal_target(gt_boxes3d)
-        self.cal_target(gt_boxes3d)
+        pos_equal_one, neg_equal_one, targets = self.cal_target(gt_boxes3d)
 
-        
         return voxel_features, voxel_coords
 
     def __len__(self):
