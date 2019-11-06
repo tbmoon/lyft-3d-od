@@ -5,11 +5,14 @@
 *tmp*
 .ipynb_checkpoints
 .DS_Store
+box_overlaps.cpython-36m-x86_64-linux-gnu.so
 sample_submission.csv
 
 __pycache__
 tmp
 data
 logs
+build
 models
 outputs
+
