@@ -124,13 +124,13 @@ class LyftLevel5Dataset(data.Dataset):
         neg_equal_one = np.zeros((*self.feature_map_shape, self.anchor_two_rotations))
         targets = np.zeros((*self.feature_map_shape, 7 * self.anchor_two_rotations))
 
-        gt_boxes3d_xyzlwhr = [[gt_box3d.center[0],
-                               gt_box3d.center[1],
-                               gt_box3d.center[2],
-                               gt_box3d.wlh[1],
-                               gt_box3d.wlh[0],
-                               gt_box3d.wlh[2],
-                               gt_box3d.orientation.radians] for gt_box3d in gt_boxes3d]
+        gt_boxes3d_xyzlwhr = np.array([[gt_box3d.center[0],
+                                        gt_box3d.center[1],
+                                        gt_box3d.center[2],
+                                        gt_box3d.wlh[1],
+                                        gt_box3d.wlh[0],
+                                        gt_box3d.wlh[2],
+                                        gt_box3d.orientation.radians] for gt_box3d in gt_boxes3d])
 
         # Only taken into account rotation around yaw axis.
         # It means bottom-corners equal to top-corner.
@@ -140,19 +140,70 @@ class LyftLevel5Dataset(data.Dataset):
         anchor_boxes2d = utils.boxes2d_four_corners_to_two_corners(anchors_bottom_corner)
         gt_boxes2d = utils.boxes2d_four_corners_to_two_corners(gt_boxes_bottom_corner) 
 
-        #iou = bbox_overlaps(np.ascontiguousarray(anchor_boxes2d, dtype=np.float32),
-        #                    np.ascontiguousarray(gt_boxes2d, dtype=np.float32))
-        
+        # iou: [num_anchor_boxes2d, num_gt_boxes2d]
         iou = bbox_overlaps(np.ascontiguousarray(anchor_boxes2d).astype(np.float32),
                             np.ascontiguousarray(gt_boxes2d).astype(np.float32))
-        
-        print(iou)
-        
-        
-        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 
-        
-    
+        # id_highest: [num_gt_boxes2d]
+        # - For each gt_boxes2d, index of max iou-scored anchor box.
+        id_highest = np.argmax(iou.T, axis=1)
+
+        # id_highest_gt: [num_gt_boxes2d]
+        # - Ranged from 0 to num_gt_boxes2d - 1.
+        id_highest_gt = np.arange(iou.T.shape[0])
+
+        # For gt_boxes3d, mask stands for filter of box with highest anchor which has iou > 0.
+        mask = iou.T[id_highest_gt, id_highest] > 0
+
+        # Get rid of those gt_boxes3d with iou of 0 with each anchor.
+        id_highest, id_highest_gt = id_highest[mask], id_highest_gt[mask]
+
+        # In the table of iou, every (anchor_boxes2d and gt_boxes2d) pair with iou > iou_threshold_p.
+        # id_pos: [num_pos_anchor_boxes2d]
+        # id_pos_gt: [num_pos_anchor_boxes2d]
+        id_pos, id_pos_gt = np.where(iou > self.iou_pos_threshold)
+
+        # In the table of iou, every anchor with iou < iou_threshold_n with all gt_boxes2d.
+        id_neg = np.where(np.sum(iou < self.iou_neg_threshold, axis=1) == iou.shape[1])[0]
+
+        id_pos = np.concatenate([id_pos, id_highest])
+        id_pos_gt = np.concatenate([id_pos_gt, id_highest_gt])
+
+        id_pos, index = np.unique(id_pos, return_index=True)
+        # The index of id_pos of anchor appears first time.
+        id_pos_gt = id_pos_gt[index]
+        id_neg.sort()
+
+        # Cal the target and set the equal one.
+        index_x, index_y, index_z = np.unravel_index(
+            id_pos, (*self.feature_map_shape, self.anchor_two_rotations))
+
+        pos_equal_one[index_x, index_y, index_z] = 1
+
+        targets[index_x, index_y, np.array(index_z) * 7] = \
+            (gt_boxes3d_xyzlwhr[id_pos_gt, 0] - self.anchors[id_pos, 0]) / anchors_d[id_pos]
+        targets[index_x, index_y, np.array(index_z) * 7 + 1] = \
+            (gt_boxes3d_xyzlwhr[id_pos_gt, 1] - self.anchors[id_pos, 1]) / anchors_d[id_pos]
+        targets[index_x, index_y, np.array(index_z) * 7 + 2] = \
+            (gt_boxes3d_xyzlwhr[id_pos_gt, 2] - self.anchors[id_pos, 2]) / self.anchors[id_pos, 3]
+        targets[index_x, index_y, np.array(index_z) * 7 + 3] = \
+            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 3] / self.anchors[id_pos, 3])
+        targets[index_x, index_y, np.array(index_z) * 7 + 4] = \
+            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 4] / self.anchors[id_pos, 4])
+        targets[index_x, index_y, np.array(index_z) * 7 + 5] = \
+            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 5] / self.anchors[id_pos, 5])
+        targets[index_x, index_y, np.array(index_z) * 7 + 6] = \
+            (gt_boxes3d_xyzlwhr[id_pos_gt, 6] - self.anchors[id_pos, 6])
+
+        neg_equal_one[index_x, index_y, index_z] = 1
+
+        # To avoid a box be pos/neg in the same time
+        index_x, index_y, index_z = np.unravel_index(id_highest, (*self.feature_map_shape, self.anchor_two_rotations))
+        neg_equal_one[index_x, index_y, index_z] = 0
+
+        return pos_equal_one, neg_equal_one, targets
+
+
     def __getitem__(self, idx):
         # Point clouds of lidar are positioned at the sensor frame,
         # while gt_boxes3d at the global frame.
@@ -184,7 +235,7 @@ class LyftLevel5Dataset(data.Dataset):
         # Encode bounding boxes.
         pos_equal_one, neg_equal_one, targets = self.cal_target(gt_boxes3d)
 
-        return voxel_features, voxel_coords
+        return voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets
 
     def __len__(self):
         return 1

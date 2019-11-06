@@ -36,7 +36,8 @@ def main():
             else:
                 pass
             #model.eval()
-            for idx, (pointcloud) in enumerate(data_loaders[phase]):
+
+            for idx, (voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets) in enumerate(data_loaders[phase]):
                 print(idx)
                 #optimizer.zero_grad()
 
