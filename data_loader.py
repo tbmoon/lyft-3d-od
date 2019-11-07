@@ -19,11 +19,10 @@ import utils
 
 class LyftLevel5Dataset(data.Dataset):
     def __init__(self,
-                 input_dir,
                  phase):
         self.df = pd.read_csv(os.path.join(os.getcwd(), 'data', phase + '.csv'))
-        self.lyft_dataset = LyftDataset(data_path=os.path.join(input_dir, 'train'),
-                                        json_path=os.path.join(input_dir, 'train', 'data'),
+        self.lyft_dataset = LyftDataset(data_path=os.path.join(cfg.input_dir, 'train'),
+                                        json_path=os.path.join(cfg.input_dir, 'train', 'data'),
                                         verbose=False)
 
         # Define voxel space.
@@ -267,26 +266,25 @@ def collate_fn(batch):
            torch.Tensor(np.array(targets))        
 
 
-def get_dataloader(
-    input_dir,
-    phases,
-    batch_size,
-    num_workers):
+def get_dataloader(phases):
 
     lyftlevel5_datasets = {
         phase: LyftLevel5Dataset(
-            input_dir=input_dir,
             phase=phase)
         for phase in phases}
 
     data_loaders = {
         phase: torch.utils.data.DataLoader(
             dataset=lyftlevel5_datasets[phase],
-            batch_size=batch_size,
+            batch_size=cfg.batch_size,
             shuffle=True if phase is not 'test' else False,
-            num_workers=num_workers,
+            num_workers=cfg.num_workers,
             collate_fn=collate_fn,
             pin_memory=False)
         for phase in phases}
 
-    return data_loaders
+    data_sizes = {
+        phase: len(lyftlevel5_datasets[phase])
+        for phase in phases}
+
+    return data_loaders, data_sizes

@@ -5,24 +5,21 @@ import numpy as np
 class config:
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
 
-    model_name = 'batse_model'
+    model_name = 'base_model'
 
     # The below ranges are determined after checking point cloud w.r.t the sensor frame.
     # Update this after checking point clouds along with box position using all samples.
     #xrange = (-100, 100)
     #yrange = (-100, 100)
     #zrange = (-10, 10)
-    #xrange = (-50, 50)
-    #yrange = (-50, 50)
-    #zrange = (-4, 4)
-    xrange = (0, 70.4)
-    yrange = (-40, 40)
-    zrange = (-3, 1)
+    xrange = (-70.4, 70.4)
+    yrange = (-80, 80)
+    zrange = (-4, 4)
 
     # Voxel size.
-    vox_width = 0.2
-    vox_height = 0.2
-    vox_depth = 0.4
+    vox_width = 0.4
+    vox_height = 0.4
+    vox_depth = 0.8
 
     # W: number of voxels along x axis.
     # H: number of voxels along y axis.
@@ -39,34 +36,23 @@ class config:
     anchor_two_rotations = 2
 
     # Maximum number of the point clouds in each voxel.
-    pointclouds_per_vox = 35
-
-    # Number of anchors for each voxel feature.
-    #anchors_per_vox_feat = 2
+    pointclouds_per_vox = 70
 
     # IOU thresholds of positive and negative anchors. 
     iou_pos_threshold = 0.6
     iou_neg_threshold = 0.45
-    
 
-    
-   
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    num_epochs = 1
+    # Loss parameters.
+    alpha = 1
+    beta = 10
+    reg = 3
+    clip_grad_thres = 8.4
+
+    # Optimizer parameters.
+    learning_rate = 0.001
+    step_size = 5
+    gamma = 0.1
+
+    num_epochs = 20
     batch_size = 1
     num_workers = 16
