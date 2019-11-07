@@ -42,20 +42,18 @@ def main():
             since = time.time()
             
             if phase == 'train':
-                pass
-            #model.train()
+                model.train()
             else:
-                pass
-            #model.eval()
+                model.eval()
 
             for idx, (voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets) in enumerate(data_loaders[phase]):
                 if idx % 100 == 0:
                     print("idx", idx)
 
-                voxel_features = torch.Tensor(voxel_features).to(device)
-                pos_equal_one = torch.Tensor(pos_equal_one).to(device)
-                neg_equal_one = torch.Tensor(neg_equal_one).to(device)
-                targets = torch.Tensor(targets).to(device)
+                voxel_features = voxel_features.to(device)
+                pos_equal_one = pos_equal_one.to(device)
+                neg_equal_one = neg_equal_one.to(device)
+                targets = targets.to(device)
 
                 psm, rm = model(voxel_features, voxel_coords)
                 

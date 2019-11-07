@@ -260,11 +260,11 @@ def collate_fn(batch):
         neg_equal_one.append(sample[3])
         targets.append(sample[4])
 
-    return np.concatenate(voxel_features), \
-           np.concatenate(voxel_coords), \
-           np.array(pos_equal_one),\
-           np.array(neg_equal_one),\
-           np.array(targets)        
+    return torch.Tensor(np.concatenate(voxel_features)), \
+           torch.LongTensor(np.concatenate(voxel_coords)), \
+           torch.Tensor(np.array(pos_equal_one)),\
+           torch.Tensor(np.array(neg_equal_one)),\
+           torch.Tensor(np.array(targets))        
 
 
 def get_dataloader(
