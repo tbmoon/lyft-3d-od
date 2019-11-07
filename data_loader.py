@@ -1,6 +1,7 @@
 import os
 import sys
 import math
+import time
 import numpy as np
 import pandas as pd
 import torch
@@ -57,8 +58,8 @@ class LyftLevel5Dataset(data.Dataset):
 
         # W: number of voxels along x axis.
         # H: number of voxels along y axis.
-        self.W = math.ceil((self.xrange[1] - self.xrange[0]) / self.vox_width) 
-        self.H = math.ceil((self.yrange[1] - self.yrange[0]) / self.vox_height)
+        self.W = cfg.W
+        self.H = cfg.H
 
         # Not (W/2, H/2), but (H/2, W/2).
         self.feature_map_shape = (int(self.H / 2), int(self.W / 2))
@@ -134,14 +135,14 @@ class LyftLevel5Dataset(data.Dataset):
 
         # Only taken into account rotation around yaw axis.
         # It means bottom-corners equal to top-corner.
-        anchors_bottom_corner = utils.anchors_center_to_bottom_corner(self.anchors)
-        gt_boxes_bottom_corner = utils.gt_boxes3d_center_to_bottom_corner(gt_boxes3d)
+        ac_boxes2d_corners = utils.boxes3d_to_corners(self.anchors)
+        gt_boxes2d_corners = utils.gt_boxes3d_center_to_bottom_corner(gt_boxes3d)
 
-        anchor_boxes2d = utils.boxes2d_four_corners_to_two_corners(anchors_bottom_corner)
-        gt_boxes2d = utils.boxes2d_four_corners_to_two_corners(gt_boxes_bottom_corner) 
-
-        # iou: [num_anchor_boxes2d, num_gt_boxes2d]
-        iou = bbox_overlaps(np.ascontiguousarray(anchor_boxes2d).astype(np.float32),
+        ac_boxes2d = utils.boxes2d_four_corners_to_two_corners(ac_boxes2d_corners)
+        gt_boxes2d = utils.boxes2d_four_corners_to_two_corners(gt_boxes2d_corners) 
+        
+        # iou: [num_ac_boxes2d, num_gt_boxes2d]
+        iou = bbox_overlaps(np.ascontiguousarray(ac_boxes2d).astype(np.float32),
                             np.ascontiguousarray(gt_boxes2d).astype(np.float32))
 
         # id_highest: [num_gt_boxes2d]
@@ -158,9 +159,9 @@ class LyftLevel5Dataset(data.Dataset):
         # Get rid of those gt_boxes3d with iou of 0 with each anchor.
         id_highest, id_highest_gt = id_highest[mask], id_highest_gt[mask]
 
-        # In the table of iou, every (anchor_boxes2d and gt_boxes2d) pair with iou > iou_threshold_p.
-        # id_pos: [num_pos_anchor_boxes2d]
-        # id_pos_gt: [num_pos_anchor_boxes2d]
+        # In the table of iou, every (ac_boxes2d and gt_boxes2d) pair with iou > iou_threshold_p.
+        # id_pos: [num_pos_ac_boxes2d]
+        # id_pos_gt: [num_pos_ac_boxes2d]
         id_pos, id_pos_gt = np.where(iou > self.iou_pos_threshold)
 
         # In the table of iou, every anchor with iou < iou_threshold_n with all gt_boxes2d.
@@ -234,12 +235,36 @@ class LyftLevel5Dataset(data.Dataset):
 
         # Encode bounding boxes.
         pos_equal_one, neg_equal_one, targets = self.cal_target(gt_boxes3d)
-
+        
         return voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets
 
     def __len__(self):
-        return 1
-        #return len(self.df)
+        return len(self.df)
+
+        
+def collate_fn(batch):
+    voxel_features = []
+    voxel_coords = []
+    pos_equal_one = []
+    neg_equal_one = []
+    targets = []
+
+    for i, sample in enumerate(batch):
+        voxel_features.append(sample[0])
+
+        voxel_coords.append(
+            np.pad(sample[1], ((0, 0), (1, 0)),
+                mode='constant', constant_values=i))
+
+        pos_equal_one.append(sample[2])
+        neg_equal_one.append(sample[3])
+        targets.append(sample[4])
+
+    return np.concatenate(voxel_features), \
+           np.concatenate(voxel_coords), \
+           np.array(pos_equal_one),\
+           np.array(neg_equal_one),\
+           np.array(targets)        
 
 
 def get_dataloader(
@@ -260,6 +285,7 @@ def get_dataloader(
             batch_size=batch_size,
             shuffle=True if phase is not 'test' else False,
             num_workers=num_workers,
+            collate_fn=collate_fn,
             pin_memory=False)
         for phase in phases}
 
