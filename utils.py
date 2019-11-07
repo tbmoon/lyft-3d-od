@@ -3,37 +3,38 @@ from lyft_dataset_sdk.utils.data_classes import Quaternion
 from config import config as cfg
 
 
-def anchors_center_to_bottom_corner(anchors):
-    # anchors: [num_anchors, 7]
-    # - num_anchors = feature_map_size * anchor_two_rotations.
-    # - 7: anchor_center_x, anchor_center_y, anchor_center_z,
-    #      anchor_length, anchor_width, anchor_height,
-    #      anchor_yaw
-    num_anchors = anchors.shape[0]
-    anchors_bottom_corner = np.zeros((num_anchors, 4, 2))  # (num_anchors, 4 bottom corners, 2 xy)
-    for i in range(num_anchors):
-        # Re-created 3D anchor box in the sensor frame.
-        anchor = anchors[i]
-        anchor_center = anchor[0:3]
-        anchor_length, anchor_width, anchor_height = anchor[3:6]
-        anchor_yaw = anchor[-1]
+def boxes3d_to_corners(boxes3d, rotate=True):
+    # input - boxes3d: [num_boxes, 7]
+    # - num_boxes = feature_map_size * anchor_two_rotations.
+    # - 7: center_x, center_y, center_z,
+    #      length, width, height,
+    #      yaw
+    # output - boxes2d_corner: [num_boxes, 4 corners, 2 xy]
+    num_boxes = boxes3d.shape[0]
+    l, w, h = boxes3d[:, 3], boxes3d[:, 4], boxes3d[:, 5]
 
-        # Refer "https://github.com/lyft/nuscenes-devkit/blob/master/lyft_dataset_sdk/utils/data_classes.py".
-        # - "def corners(self, wlh_factor: float = 1.0)".
-        # - "def bottom_corners(self)".
-        Box = np.array([anchor_length / 2 * np.array([1, 1, -1, -1]),
-                        anchor_width  / 2 * np.array([-1, 1, 1, -1])])
+    x_corners = np.array([l / 2., l / 2., -l / 2., -l / 2.], dtype=np.float32).T  # (N, 4)
+    y_corners = np.array([-w / 2., w / 2., w / 2., -w / 2.], dtype=np.float32).T  # (N, 4)
 
-        # Rotate anchor box around the yaw (z) axis of the body.
-        rotMat = np.array([[np.cos(anchor_yaw), -np.sin(anchor_yaw)],
-                           [np.sin(anchor_yaw),  np.cos(anchor_yaw)]])
-        Box = np.dot(rotMat, Box)
+    if rotate:
+        ry = boxes3d[:, 6]
+        zeros, ones = np.zeros(ry.size, dtype=np.float32), np.ones(ry.size, dtype=np.float32)
+        rot_list = np.array([[np.cos(ry), -np.sin(ry)],
+                             [np.sin(ry), np.cos(ry)]])  # (2, 2, N)
+        R_list = np.transpose(rot_list, (2, 0, 1))       # (N, 2, 2)
 
-        # Translate anchor box to the sensor frame in the x-y plane.
-        Box = Box + np.tile(anchor_center[:2], (4, 1)).T
-        anchors_bottom_corner[i] = Box.transpose()
+        temp_corners = np.concatenate((x_corners.reshape(-1, 4, 1), y_corners.reshape(-1, 4, 1)), axis=2)  # (N, 4, 2)
+        rotated_corners = np.matmul(temp_corners, R_list)  # (N, 4, 2)
+        x_corners, y_corners = rotated_corners[:, :, 0], rotated_corners[:, :, 1]
 
-    return anchors_bottom_corner
+    x_loc, y_loc = boxes3d[:, 0], boxes3d[:, 1]
+
+    x = x_loc.reshape(-1, 1) + x_corners.reshape(-1, 4)
+    y = y_loc.reshape(-1, 1) + y_corners.reshape(-1, 4)
+
+    corners = np.concatenate((x.reshape(-1, 4, 1), y.reshape(-1, 4, 1)), axis=2)
+
+    return corners.astype(np.float32)
 
 
 def gt_boxes3d_center_to_bottom_corner(gt_boxes3d):
