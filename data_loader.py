@@ -130,7 +130,7 @@ class LyftLevel5Dataset(data.Dataset):
                                         gt_box3d.wlh[1],
                                         gt_box3d.wlh[0],
                                         gt_box3d.wlh[2],
-                                        gt_box3d.orientation.radians] for gt_box3d in gt_boxes3d])
+                                        gt_box3d.orientation.yaw_pitch_roll[0]] for gt_box3d in gt_boxes3d])
 
         # Only taken into account rotation around yaw axis.
         # It means bottom-corners equal to top-corner.

@@ -17,11 +17,10 @@ def boxes3d_to_corners(boxes3d, rotate=True):
     y_corners = np.array([-w / 2., w / 2., w / 2., -w / 2.], dtype=np.float32).T  # (N, 4)
 
     if rotate:
-        ry = boxes3d[:, 6]
-        zeros, ones = np.zeros(ry.size, dtype=np.float32), np.ones(ry.size, dtype=np.float32)
-        rot_list = np.array([[np.cos(ry), -np.sin(ry)],
-                             [np.sin(ry), np.cos(ry)]])  # (2, 2, N)
-        R_list = np.transpose(rot_list, (2, 0, 1))       # (N, 2, 2)
+        rz = boxes3d[:, 6]
+        rot_list = np.array([[ np.cos(rz), np.sin(rz)],
+                             [-np.sin(rz), np.cos(rz)]])  # (2, 2, N)
+        R_list = np.transpose(rot_list, (2, 0, 1))        # (N, 2, 2)
 
         temp_corners = np.concatenate((x_corners.reshape(-1, 4, 1), y_corners.reshape(-1, 4, 1)), axis=2)  # (N, 4, 2)
         rotated_corners = np.matmul(temp_corners, R_list)  # (N, 4, 2)
