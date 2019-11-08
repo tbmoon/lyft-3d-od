@@ -7,14 +7,13 @@ import pandas as pd
 import torch
 import torch.utils.data as data
 
-#from cython_bbox import bbox_overlaps
-from box_overlaps import bbox_overlaps
 from lyft_dataset_sdk.lyftdataset import LyftDataset
 from lyft_dataset_sdk.utils.data_classes import LidarPointCloud, Quaternion
 from lyft_dataset_sdk.utils.geometry_utils import transform_matrix
 
 from config import config as cfg
-import utils
+from utils import utils
+from utils.iou.box_overlaps import bbox_overlaps
 
 
 class LyftLevel5Dataset(data.Dataset):

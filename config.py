@@ -36,7 +36,7 @@ class config:
     anchor_two_rotations = 2
 
     # Maximum number of the point clouds in each voxel.
-    pointclouds_per_vox = 70
+    pointclouds_per_vox = 35
 
     # IOU thresholds of positive and negative anchors. 
     iou_pos_threshold = 0.6
