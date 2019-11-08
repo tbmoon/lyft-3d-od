@@ -135,7 +135,7 @@ class LyftLevel5Dataset(data.Dataset):
         # Only taken into account rotation around yaw axis.
         # It means bottom-corners equal to top-corner.
         ac_boxes2d_corners = utils.boxes3d_to_corners(self.anchors)
-        gt_boxes2d_corners = utils.gt_boxes3d_center_to_bottom_corner(gt_boxes3d)
+        gt_boxes2d_corners = utils.boxes3d_to_corners(gt_boxes3d_xyzlwhr)
 
         ac_boxes2d = utils.boxes2d_four_corners_to_two_corners(ac_boxes2d_corners)
         gt_boxes2d = utils.boxes2d_four_corners_to_two_corners(gt_boxes2d_corners) 
