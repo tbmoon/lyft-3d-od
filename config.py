@@ -52,6 +52,7 @@ class config:
     learning_rate = 0.001
     step_size = 5
     gamma = 0.1
+    accumulation_steps = 64
 
     num_epochs = 20
     batch_size = 1

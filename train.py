@@ -50,9 +50,9 @@ def main():
             else:
                 model.eval()
 
+            optimizer.zero_grad()
             for idx, (voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets) \
                 in enumerate(data_loaders[phase]):
-                optimizer.zero_grad()
 
                 voxel_features = voxel_features.to(device)
                 pos_equal_one = pos_equal_one.to(device)
@@ -67,8 +67,11 @@ def main():
 
                     if phase == 'train':
                         total_loss.backward()
-                        _ = nn.utils.clip_grad_norm_(model.parameters(), cfg.clip_grad_thres)
-                        optimizer.step()
+                        #_ = nn.utils.clip_grad_norm_(model.parameters(), cfg.clip_grad_thres)
+
+                        if (idx + 1) % cfg.accumulation_steps == 0:
+                            optimizer.step()
+                            optimizer.zero_grad()
 
                     running_conf_loss += conf_loss.item()
                     running_reg_loss += reg_loss.item()
