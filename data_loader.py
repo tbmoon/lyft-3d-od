@@ -192,7 +192,7 @@ class LyftLevel5Dataset(data.Dataset):
         targets[index_x, index_y, np.array(index_z) * 7 + 5] = \
             np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 5] / self.anchors[id_pos, 5])
         targets[index_x, index_y, np.array(index_z) * 7 + 6] = \
-            (gt_boxes3d_xyzlwhr[id_pos_gt, 6] - self.anchors[id_pos, 6])
+            np.sin(gt_boxes3d_xyzlwhr[id_pos_gt, 6] - self.anchors[id_pos, 6])
 
         neg_equal_one[index_x, index_y, index_z] = 1
 
