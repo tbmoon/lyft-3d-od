@@ -14,12 +14,12 @@ class config:
     #zrange = (-10, 10)
     xrange = (-70.4, 70.4)
     yrange = (-80, 80)
-    zrange = (-4, 4)
+    zrange = (-3, 1)
 
     # Voxel size.
     vox_width = 0.4
     vox_height = 0.4
-    vox_depth = 0.8
+    vox_depth = 0.4
 
     # W: number of voxels along x axis.
     # H: number of voxels along y axis.
