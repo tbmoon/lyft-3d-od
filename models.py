@@ -153,15 +153,15 @@ class VoxelNet(nn.Module):
         self.cml = ConvoMidLayer()
         self.rpn = RPN()
 
-    def voxelize(self, sparse_features, coords):
+    def voxelize(self, sparse_features, coords, device):
         dim = sparse_features.shape[-1]
-        dense_feature = torch.zeros(dim, cfg.batch_size, cfg.D, cfg.H, cfg.W).cuda()
+        dense_feature = torch.zeros(dim, cfg.batch_size, cfg.D, cfg.H, cfg.W).to(device)
         dense_feature[:, coords[:,0], coords[:,1], coords[:,2], coords[:,3]]= sparse_features.transpose(1,0)
         return dense_feature.transpose(0,1)
 
-    def forward(self, voxel_features, voxel_coords):
+    def forward(self, voxel_features, voxel_coords, device):
         # feature learning network
         vwfs = self.svfe(voxel_features)
-        vwfs = self.voxelize(vwfs, voxel_coords)
+        vwfs = self.voxelize(vwfs, voxel_coords, device)
         psm,rm = self.rpn(self.cml(vwfs).view(cfg.batch_size, -1, cfg.H, cfg.W))
         return psm, rm
