@@ -35,6 +35,10 @@ class config:
     iou_pos_threshold = 0.6
     iou_neg_threshold = 0.45
 
+    # non-maximum suppression
+    nms_threshold = 0.1
+    score_threshold = 0.96
+    
     # Loss parameters.
     alpha = 1
     beta = 10
