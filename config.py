@@ -4,6 +4,7 @@ import numpy as np
 
 class config:
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
+    work_dir = '/home/mtb/ongoing_analysis/lyft-3d-od'
     model_name = 'base_model'
 
     eps = 1e-6

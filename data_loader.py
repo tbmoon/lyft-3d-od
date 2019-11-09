@@ -19,7 +19,7 @@ from utils.iou.box_overlaps import bbox_overlaps
 class LyftLevel5Dataset(data.Dataset):
     def __init__(self,
                  phase):
-        self.df = pd.read_csv(os.path.join(os.getcwd(), 'data', phase + '.csv'))
+        self.df = pd.read_csv(os.path.join(cfg.work_dir, 'data', phase + '.csv'))
         self.lyft_dataset = LyftDataset(data_path=os.path.join(cfg.input_dir, 'train'),
                                         json_path=os.path.join(cfg.input_dir, 'train', 'data'),
                                         verbose=False)

@@ -19,8 +19,8 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
 def main():
-    os.makedirs(os.path.join(os.getcwd(), 'data/logs'), exist_ok=True)
-    os.makedirs(os.path.join(os.getcwd(), 'data/models'), exist_ok=True)
+    os.makedirs(os.path.join(cfg.work_dir, 'data/logs'), exist_ok=True)
+    os.makedirs(os.path.join(cfg.work_dir, 'data/models'), exist_ok=True)
 
     data_loaders, data_sizes = get_dataloader(
         phases=['train', 'valid'])
@@ -87,7 +87,7 @@ def main():
             print('\t*- Total Loss        : {:.4f}'.format(epoch_total_loss))
             
             # Log the loss in an epoch.
-            with open(os.path.join(os.getcwd(), 'data/logs/{}-log-epoch-{:02}.txt').format(phase, epoch+1), 'w') as f:
+            with open(os.path.join(cfg.work_dir, 'data/logs/{}-log-epoch-{:02}.txt').format(phase, epoch+1), 'w') as f:
                 f.write(str(epoch+1) + '\t' +
                         str(epoch_conf_loss) + '\t' +
                         str(epoch_reg_loss) + '\t' +
@@ -97,7 +97,7 @@ def main():
             if phase == 'train':
                 torch.save({'epoch': epoch+1,
                             'state_dict': model.state_dict()},
-                           os.path.join(os.getcwd(), 'data/models/model-epoch-{:02d}.ckpt'.format(epoch+1)))
+                           os.path.join(cfg.work_dir, 'data/models/model-epoch-{:02d}.ckpt'.format(epoch+1)))
 
             time_elapsed = time.time() - since
             print('=> Running time in a epoch: {:.0f}h {:.0f}m {:.0f}s'
