@@ -60,9 +60,11 @@ def main():
                 targets = targets.to(device)
 
                 with torch.set_grad_enabled(phase == 'train'):
+                    # psm (possibility score map): [batch_size, ac_rot_z = 2, H_map = 200, W_map = 176]
+                    # rm (regression map): [batch_size, ac_rot_z * encode_size = 14, H_map = 200, W_map = 176]
                     psm, rm = model(voxel_features, voxel_coords)
 
-                    conf_loss, reg_loss = criterion(rm, psm, pos_equal_one, neg_equal_one, targets)
+                    conf_loss, reg_loss = criterion(psm, rm, pos_equal_one, neg_equal_one, targets)
                     total_loss = conf_loss + reg_loss
 
                     if phase == 'train':
