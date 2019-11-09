@@ -33,7 +33,7 @@ def main():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
 
-    criterion = VoxelLoss(alpha=cfg.alpha, beta=cfg.beta, reg=cfg.reg)
+    criterion = VoxelLoss()
 
     optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=cfg.step_size, gamma=cfg.gamma)

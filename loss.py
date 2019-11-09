@@ -4,12 +4,9 @@ import torch.nn as nn
 
 
 class VoxelLoss(nn.Module):
-    def __init__(self, alpha, beta, reg):
+    def __init__(self):
         super(VoxelLoss, self).__init__()
         self.eps = 1e-6
-        self.alpha = alpha
-        self.beta = beta
-        self.reg = reg
         self.smoothl1loss = nn.SmoothL1Loss(reduction='sum')
 
     def forward(self, rm, psm, pos_equal_one, neg_equal_one, targets):
@@ -24,10 +21,8 @@ class VoxelLoss(nn.Module):
         rm_pos = rm * pos_equal_one_for_reg
         targets_pos = targets * pos_equal_one_for_reg
         reg_loss = self.smoothl1loss(rm_pos, targets_pos)
-        reg_loss = self.reg * reg_loss / (pos_equal_one.sum() + self.eps)
+        reg_loss = cfg.reg * reg_loss / (pos_equal_one.sum() + self.eps)
 
-        cls_pos_loss = (-pos_equal_one * torch.log(p_pos + self.eps)).sum()/(pos_equal_one.sum()+self.eps)
-        cls_neg_loss = (-neg_equal_one * torch.log(1 - p_pos + self.eps)).sum()/(neg_equal_one.sum()+self.eps)
-        conf_loss = self.alpha * cls_pos_loss + self.beta * cls_neg_loss
+	    conf_loss = -1 * cfg.alpha * (1 - p_pos)**cfg.focal_loss_gamma * torch.log(p_pos + self.eps).sum()
 
         return conf_loss, reg_loss

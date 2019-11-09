@@ -43,6 +43,7 @@ class config:
     alpha = 1
     beta = 10
     reg = 3
+    focal_loss_gamma = 5
     clip_grad_thres = 8.4
 
     # Optimizer parameters.
