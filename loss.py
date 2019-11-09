@@ -23,6 +23,8 @@ class VoxelLoss(nn.Module):
         reg_loss = self.smoothl1loss(rm_pos, targets_pos)
         reg_loss = cfg.reg * reg_loss / (pos_equal_one.sum() + cfg.eps)
 
-        conf_loss = -1 * cfg.alpha * (1 - p_pos)**cfg.focal_loss_gamma * torch.log(p_pos + cfg.eps).sum()
+        alpha = cfg.alpha * pos_equal_one.sum() / (pos_equal_one.sum() + neg_equal_one.sum() + cfg.eps)
+        conf_loss = -1 * alpha * (1 - p_pos)**cfg.focal_loss_gamma * torch.log(p_pos + cfg.eps).sum()
+        conf_loss = conf_loss.sum()
 
         return conf_loss, reg_loss
