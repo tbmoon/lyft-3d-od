@@ -3,27 +3,25 @@ import numpy as np
 
 
 class config:
+
+    # Global parameters.
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
     work_dir = '/home/mtb/ongoing_analysis/lyft-3d-od'
     model_name = 'base_model'
-
     eps = 1e-6
 
-    # The below ranges are determined after checking point cloud w.r.t the sensor frame.
-    # Update this after checking point clouds along with box position using all samples.
-    #xrange = (-100, 100)
-    #yrange = (-100, 100)
-    #zrange = (-10, 10)
-    xrange = (-70.4, 70.4)
+    # The below ranges need to be determined after checking point cloud and box location w.r.t the sensor frame.
+    xrange = (-80, 80)
     yrange = (-80, 80)
     zrange = (-3, 1)
 
-    # Voxel size.
+    # Voxel size in meter.
     vox_width = 0.4
     vox_height = 0.4
     vox_depth = 0.4
 
     # Geometry of the anchor.
+    # ac_length, ac_width, ac_height and ac_center_z in meter.
     ac_length = 3.9
     ac_width = 1.6
     ac_height = 1.56
@@ -31,7 +29,7 @@ class config:
     ac_rot_z = 2
 
     # Maximum number of the point clouds in each voxel.
-    pointclouds_per_vox = 35
+    pointclouds_per_vox = 45
 
     # IOU thresholds of positive and negative anchors. 
     iou_pos_threshold = 0.6
@@ -40,7 +38,7 @@ class config:
     # non-maximum suppression
     nms_threshold = 0.1
     score_threshold = 0.96
-    
+
     # Loss parameters.
     alpha = 0.5
     beta = 1
@@ -52,27 +50,28 @@ class config:
     gamma = 0.1
     accumulation_steps = 64
 
+    # Training parameters.
     num_epochs = 20
     batch_size = 1
     num_workers = 16
 
-
-    # W: number of voxels along x axis.
-    # H: number of voxels along y axis.
-    # D: number of voxels along z axis.
+    # W: number of voxels along x axis (no unit).
+    # H: number of voxels along y axis (no unit).
+    # D: number of voxels along z axis (no unit).
     W = math.ceil((xrange[1] - xrange[0]) / vox_width) 
     H = math.ceil((yrange[1] - yrange[0]) / vox_height)
     D = math.ceil((zrange[1] - zrange[0]) / vox_depth)
 
     # Not (W/2, H/2), but (H/2, W/2).
+    # H/2 = H_map, W/2 = W_map.
     feature_map_shape = (int(H / 2), int(W / 2))
 
-    # anchors: [200, 176, 2, 7] x y z l w h r
+    # Pre-define 3D-anchor boxes with rotation around yaw axis: [H_map, W_map, ac_rot_z, encode_size].
+    #   where, encode_size corrensponds to [x, y, z, l, w, h, rz].
     # Mapping voxel to voxel feature map.
     x = np.linspace(xrange[0]+vox_width, xrange[1]-vox_width, int(W/2))
     y = np.linspace(yrange[0]+vox_height, yrange[1]-vox_height, int(H/2))
 
-    # Pre-define anchor boxes.
     anchor_center_x, anchor_center_y = np.meshgrid(x, y)
     anchor_center_x = np.tile(anchor_center_x[..., np.newaxis], ac_rot_z)
     anchor_center_y = np.tile(anchor_center_y[..., np.newaxis], ac_rot_z)
