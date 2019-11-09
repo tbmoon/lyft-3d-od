@@ -111,7 +111,6 @@ class LyftLevel5Dataset(data.Dataset):
         # Cal the target and set the equal one.
         index_x, index_y, index_z = np.unravel_index(
             id_pos, (*cfg.feature_map_shape, cfg.ac_rot_z))
-
         pos_equal_one[index_x, index_y, index_z] = 1
 
         targets[index_x, index_y, np.array(index_z) * 7] = \
@@ -129,10 +128,13 @@ class LyftLevel5Dataset(data.Dataset):
         targets[index_x, index_y, np.array(index_z) * 7 + 6] = \
             np.sin(gt_boxes3d_xyzlwhr[id_pos_gt, 6] - cfg.anchors[id_pos, 6])
 
+        index_x, index_y, index_z = np.unravel_index(
+            id_neg, (*cfg.feature_map_shape, cfg.ac_rot_z))
         neg_equal_one[index_x, index_y, index_z] = 1
 
         # To avoid a box be pos/neg in the same time
-        index_x, index_y, index_z = np.unravel_index(id_highest, (*cfg.feature_map_shape, cfg.ac_rot_z))
+        index_x, index_y, index_z = np.unravel_index(
+            id_highest, (*cfg.feature_map_shape, cfg.ac_rot_z))
         neg_equal_one[index_x, index_y, index_z] = 0
 
         return pos_equal_one, neg_equal_one, targets
