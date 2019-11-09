@@ -24,78 +24,13 @@ class LyftLevel5Dataset(data.Dataset):
                                         json_path=os.path.join(cfg.input_dir, 'train', 'data'),
                                         verbose=False)
 
-        # Define voxel space.
-        # *- Convention -*
-        #   - x @ reference frame: vox_width
-        #   - y @ reference frame: vox_height
-        #   - z @ reference frame: vox_depth
-        self.xrange = cfg.xrange
-        self.yrange = cfg.yrange
-        self.zrange = cfg.zrange
-        self.vox_width = cfg.vox_width
-        self.vox_height = cfg.vox_height
-        self.vox_depth = cfg.vox_depth
-
-        # Pre-defined anchors.
-        # *- Convention -*
-        #   - x @ box frame points forward    : anchor_length
-        #   - y @ box frame points to the left: anchor_width
-        #   - z @ box frame points up         : anchor_height
-        self.anchor_length = cfg.anchor_length
-        self.anchor_width = cfg.anchor_width
-        self.anchor_height = cfg.anchor_height
-        self.anchor_center_z = cfg.anchor_center_z
-        self.anchor_two_rotations = cfg.anchor_two_rotations
-
-        # Number of point clouds sampled in each voxel.
-        self.pointclouds_per_vox = cfg.pointclouds_per_vox
-
-        # IOU depends on class size.
-        self.iou_pos_threshold = cfg.iou_pos_threshold
-        self.iou_neg_threshold = cfg.iou_neg_threshold
-
-        # W: number of voxels along x axis.
-        # H: number of voxels along y axis.
-        self.W = cfg.W
-        self.H = cfg.H
-
-        # Not (W/2, H/2), but (H/2, W/2).
-        self.feature_map_shape = (int(self.H / 2), int(self.W / 2))
-
-        # Mapping voxel to voxel feature map.
-        x = np.linspace(self.xrange[0]+self.vox_width, self.xrange[1]-self.vox_width, int(self.W/2))
-        y = np.linspace(self.yrange[0]+self.vox_height, self.yrange[1]-self.vox_height, int(self.H/2))
-
-        # Pre-define anchor boxes.
-        anchor_center_x, anchor_center_y = np.meshgrid(x, y)
-        anchor_center_x = np.tile(anchor_center_x[..., np.newaxis], self.anchor_two_rotations)
-        anchor_center_y = np.tile(anchor_center_y[..., np.newaxis], self.anchor_two_rotations)
-
-        shape = np.shape(anchor_center_x)
-        anchor_length = np.ones(shape) * self.anchor_length
-        anchor_width = np.ones(shape) * self.anchor_width
-        anchor_height = np.ones(shape) * self.anchor_height
-        anchor_center_z = np.ones(shape) * self.anchor_center_z
-        anchor_yaw = np.ones(shape)
-        anchor_yaw[..., 0] = 0.
-        anchor_yaw[..., 1] = np.pi / 2
-
-        self.anchors = np.stack([anchor_center_x,
-                                 anchor_center_y,
-                                 anchor_center_z,
-                                 anchor_length,
-                                 anchor_width,
-                                 anchor_height,
-                                 anchor_yaw], axis=-1)
-        self.anchors = self.anchors.reshape(-1, 7)
-
     def voxelize_pointclouds(self, pointclouds):
         # Shuffle the pointclouds.
         np.random.shuffle(pointclouds)
 
         # x, y and z correspond to vox_width, vox_height and vox_depth, respectively.
-        voxel_coords = ((pointclouds[:, :3] - np.array([self.xrange[0], self.yrange[0], self.zrange[0]])) / (
-            self.vox_width, self.vox_height, self.vox_depth)).astype(np.int32)
+        voxel_coords = ((pointclouds[:, :3] - np.array([cfg.xrange[0], cfg.yrange[0], cfg.zrange[0]])) / (
+            cfg.vox_width, cfg.vox_height, cfg.vox_depth)).astype(np.int32)
 
         # Convert to (z, y, x) to sample unique voxel.
         voxel_coords = voxel_coords[:, [2, 1, 0]]
@@ -107,21 +42,21 @@ class LyftLevel5Dataset(data.Dataset):
         # Fill each voxel with voxel feature.
         voxel_features = []
         for i in range(len(voxel_coords)):
-            voxel = np.zeros((self.pointclouds_per_vox, 7), dtype=np.float32)
+            voxel = np.zeros((cfg.pointclouds_per_vox, 7), dtype=np.float32)
             pts = pointclouds[inv_ind == i]
-            if voxel_counts[i] > self.pointclouds_per_vox:
-                pts = pts[:self.pointclouds_per_vox, :]
-                voxel_counts[i] = self.pointclouds_per_vox
+            if voxel_counts[i] > cfg.pointclouds_per_vox:
+                pts = pts[:cfg.pointclouds_per_vox, :]
+                voxel_counts[i] = cfg.pointclouds_per_vox
             # Augment the points: (x, y, z) -> (x, y, z, i, x-mean, y-mean, z-mean).
             voxel[:pts.shape[0], :] = np.concatenate((pts, pts[:, :3] - np.mean(pts[:, :3], 0)), axis=1)
             voxel_features.append(voxel)
         return np.array(voxel_features), voxel_coords
 
     def cal_target(self, gt_boxes3d):
-        anchors_d = np.sqrt(self.anchors[:, 3]**2 + self.anchors[:, 4]**2)
-        pos_equal_one = np.zeros((*self.feature_map_shape, self.anchor_two_rotations))
-        neg_equal_one = np.zeros((*self.feature_map_shape, self.anchor_two_rotations))
-        targets = np.zeros((*self.feature_map_shape, 7 * self.anchor_two_rotations))
+        anchors_d = np.sqrt(cfg.anchors[:, 3]**2 + cfg.anchors[:, 4]**2)
+        pos_equal_one = np.zeros((*cfg.feature_map_shape, cfg.ac_rot_z))
+        neg_equal_one = np.zeros((*cfg.feature_map_shape, cfg.ac_rot_z))
+        targets = np.zeros((*cfg.feature_map_shape, 7 * cfg.ac_rot_z))
 
         gt_boxes3d_xyzlwhr = np.array([[gt_box3d.center[0],
                                         gt_box3d.center[1],
@@ -133,7 +68,7 @@ class LyftLevel5Dataset(data.Dataset):
 
         # Only taken into account rotation around yaw axis.
         # It means bottom-corners equal to top-corner.
-        ac_boxes2d_corners = utils.boxes3d_to_corners(self.anchors)
+        ac_boxes2d_corners = utils.boxes3d_to_corners(cfg.anchors)
         gt_boxes2d_corners = utils.boxes3d_to_corners(gt_boxes3d_xyzlwhr)
 
         ac_boxes2d = utils.boxes2d_four_corners_to_two_corners(ac_boxes2d_corners)
@@ -160,10 +95,10 @@ class LyftLevel5Dataset(data.Dataset):
         # In the table of iou, every (ac_boxes2d and gt_boxes2d) pair with iou > iou_threshold_p.
         # id_pos: [num_pos_ac_boxes2d]
         # id_pos_gt: [num_pos_ac_boxes2d]
-        id_pos, id_pos_gt = np.where(iou > self.iou_pos_threshold)
+        id_pos, id_pos_gt = np.where(iou > cfg.iou_pos_threshold)
 
         # In the table of iou, every anchor with iou < iou_threshold_n with all gt_boxes2d.
-        id_neg = np.where(np.sum(iou < self.iou_neg_threshold, axis=1) == iou.shape[1])[0]
+        id_neg = np.where(np.sum(iou < cfg.iou_neg_threshold, axis=1) == iou.shape[1])[0]
 
         id_pos = np.concatenate([id_pos, id_highest])
         id_pos_gt = np.concatenate([id_pos_gt, id_highest_gt])
@@ -175,29 +110,29 @@ class LyftLevel5Dataset(data.Dataset):
 
         # Cal the target and set the equal one.
         index_x, index_y, index_z = np.unravel_index(
-            id_pos, (*self.feature_map_shape, self.anchor_two_rotations))
+            id_pos, (*cfg.feature_map_shape, cfg.ac_rot_z))
 
         pos_equal_one[index_x, index_y, index_z] = 1
 
         targets[index_x, index_y, np.array(index_z) * 7] = \
-            (gt_boxes3d_xyzlwhr[id_pos_gt, 0] - self.anchors[id_pos, 0]) / anchors_d[id_pos]
+            (gt_boxes3d_xyzlwhr[id_pos_gt, 0] - cfg.anchors[id_pos, 0]) / anchors_d[id_pos]
         targets[index_x, index_y, np.array(index_z) * 7 + 1] = \
-            (gt_boxes3d_xyzlwhr[id_pos_gt, 1] - self.anchors[id_pos, 1]) / anchors_d[id_pos]
+            (gt_boxes3d_xyzlwhr[id_pos_gt, 1] - cfg.anchors[id_pos, 1]) / anchors_d[id_pos]
         targets[index_x, index_y, np.array(index_z) * 7 + 2] = \
-            (gt_boxes3d_xyzlwhr[id_pos_gt, 2] - self.anchors[id_pos, 2]) / self.anchors[id_pos, 3]
+            (gt_boxes3d_xyzlwhr[id_pos_gt, 2] - cfg.anchors[id_pos, 2]) / cfg.anchors[id_pos, 3]
         targets[index_x, index_y, np.array(index_z) * 7 + 3] = \
-            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 3] / self.anchors[id_pos, 3])
+            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 3] / cfg.anchors[id_pos, 3])
         targets[index_x, index_y, np.array(index_z) * 7 + 4] = \
-            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 4] / self.anchors[id_pos, 4])
+            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 4] / cfg.anchors[id_pos, 4])
         targets[index_x, index_y, np.array(index_z) * 7 + 5] = \
-            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 5] / self.anchors[id_pos, 5])
+            np.log(gt_boxes3d_xyzlwhr[id_pos_gt, 5] / cfg.anchors[id_pos, 5])
         targets[index_x, index_y, np.array(index_z) * 7 + 6] = \
-            np.sin(gt_boxes3d_xyzlwhr[id_pos_gt, 6] - self.anchors[id_pos, 6])
+            np.sin(gt_boxes3d_xyzlwhr[id_pos_gt, 6] - cfg.anchors[id_pos, 6])
 
         neg_equal_one[index_x, index_y, index_z] = 1
 
         # To avoid a box be pos/neg in the same time
-        index_x, index_y, index_z = np.unravel_index(id_highest, (*self.feature_map_shape, self.anchor_two_rotations))
+        index_x, index_y, index_z = np.unravel_index(id_highest, (*cfg.feature_map_shape, cfg.ac_rot_z))
         neg_equal_one[index_x, index_y, index_z] = 0
 
         return pos_equal_one, neg_equal_one, targets

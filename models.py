@@ -129,8 +129,8 @@ class RPN(nn.Module):
         self.deconv_3 = nn.Sequential(nn.ConvTranspose2d(128, 256, 1, 1, 0),
                                       nn.BatchNorm2d(256))
         
-        self.score_head = Conv2d(768, cfg.anchor_two_rotations, 1, 1, 0, activation=False, batch_norm=False)
-        self.reg_head = Conv2d(768, 7 * cfg.anchor_two_rotations, 1, 1, 0, activation=False, batch_norm=False)
+        self.score_head = Conv2d(768, cfg.ac_rot_z, 1, 1, 0, activation=False, batch_norm=False)
+        self.reg_head = Conv2d(768, 7 * cfg.ac_rot_z, 1, 1, 0, activation=False, batch_norm=False)
 
     def forward(self,x):
         x = self.block_1(x)

@@ -21,19 +21,12 @@ class config:
     vox_height = 0.4
     vox_depth = 0.4
 
-    # W: number of voxels along x axis.
-    # H: number of voxels along y axis.
-    # D: number of voxels along z axis.
-    W = math.ceil((xrange[1] - xrange[0]) / vox_width) 
-    H = math.ceil((yrange[1] - yrange[0]) / vox_height)
-    D = math.ceil((zrange[1] - zrange[0]) / vox_depth)
-
     # Geometry of the anchor.
-    anchor_length = 3.9
-    anchor_width = 1.6
-    anchor_height = 1.56
-    anchor_center_z = 0.
-    anchor_two_rotations = 2
+    ac_length = 3.9
+    ac_width = 1.6
+    ac_height = 1.56
+    ac_center_z = 0.
+    ac_rot_z = 2
 
     # Maximum number of the point clouds in each voxel.
     pointclouds_per_vox = 35
@@ -57,3 +50,42 @@ class config:
     num_epochs = 20
     batch_size = 1
     num_workers = 16
+
+
+    # W: number of voxels along x axis.
+    # H: number of voxels along y axis.
+    # D: number of voxels along z axis.
+    W = math.ceil((xrange[1] - xrange[0]) / vox_width) 
+    H = math.ceil((yrange[1] - yrange[0]) / vox_height)
+    D = math.ceil((zrange[1] - zrange[0]) / vox_depth)
+
+    # Not (W/2, H/2), but (H/2, W/2).
+    feature_map_shape = (int(H / 2), int(W / 2))
+
+    # anchors: [200, 176, 2, 7] x y z l w h r
+    # Mapping voxel to voxel feature map.
+    x = np.linspace(xrange[0]+vox_width, xrange[1]-vox_width, int(W/2))
+    y = np.linspace(yrange[0]+vox_height, yrange[1]-vox_height, int(H/2))
+
+    # Pre-define anchor boxes.
+    anchor_center_x, anchor_center_y = np.meshgrid(x, y)
+    anchor_center_x = np.tile(anchor_center_x[..., np.newaxis], ac_rot_z)
+    anchor_center_y = np.tile(anchor_center_y[..., np.newaxis], ac_rot_z)
+    anchor_center_z = np.ones_like(anchor_center_x) * ac_center_z    
+
+    anchor_length = np.ones_like(anchor_center_x) * ac_length
+    anchor_width = np.ones_like(anchor_center_x) * ac_width
+    anchor_height = np.ones_like(anchor_center_x) * ac_height
+
+    anchor_rz = np.ones_like(anchor_center_x)
+    anchor_rz[..., 0] = 0.
+    anchor_rz[..., 1] = np.pi / 2
+
+    anchors = np.stack([anchor_center_x,
+                        anchor_center_y,
+                        anchor_center_z,
+                        anchor_length,
+                        anchor_width,
+                        anchor_height,
+                        anchor_rz], axis=-1)
+    anchors = anchors.reshape(-1, 7)
