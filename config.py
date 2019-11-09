@@ -4,8 +4,9 @@ import numpy as np
 
 class config:
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
-
     model_name = 'base_model'
+
+    eps = 1e-6
 
     # The below ranges are determined after checking point cloud w.r.t the sensor frame.
     # Update this after checking point clouds along with box position using all samples.
