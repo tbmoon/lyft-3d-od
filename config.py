@@ -1,8 +1,24 @@
+import os
 import math
 import numpy as np
+import pandas as pd
 
 
 class config:
+
+    # Class counts in the lyft dataset:
+    #   - animal                  186
+    #   - bicycle               20928
+    #   - bus                    8729
+    #   - car                  534911
+    #   - emergency_vehicle       132
+    #   - motorcycle              818
+    #   - other_vehicle         33376
+    #   - pedestrian            24935
+    #   - truck                 14164
+    #
+    # Select one of them!
+    class_name = 'car'
 
     # Global parameters.
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
@@ -22,10 +38,7 @@ class config:
     vox_depth = 0.8
 
     # Geometry of the anchor.
-    # ac_length, ac_width, ac_height and ac_center_z in meter.
-    ac_length = 3.9
-    ac_width = 1.6
-    ac_height = 1.56
+    # ac_center_z in meter.
     ac_center_z = -0.75
     ac_rot_z = 2
 
@@ -66,6 +79,13 @@ class config:
     # Not (W/2, H/2), but (H/2, W/2).
     # H/2 = H_map, W/2 = W_map.
     feature_map_shape = (int(H / 2), int(W / 2))
+
+    # ac_length, ac_width and ac_height in meter are defined in data/mean_length_width_height.csv.
+    df_mean_length_width_height = pd.read_csv(os.path.join(work_dir, 'data/mean_length_width_height.csv'))
+    class_idc = df_mean_length_width_height['class_name'] == class_name
+    ac_length = df_mean_length_width_height['length'][class_idc].values[0]
+    ac_width = df_mean_length_width_height['width'][class_idc].values[0]
+    ac_height = df_mean_length_width_height['height'][class_idc].values[0]
 
     # Pre-define 3D-anchor boxes with rotation around yaw axis: [H_map, W_map, ac_rot_z, encode_size].
     #   where, encode_size corrensponds to [x, y, z, l, w, h, rz].
