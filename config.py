@@ -21,11 +21,12 @@ class config:
     class_name = 'car'
 
     # Global parameters.
+    eps = 1e-6
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
     work_dir = '/home/mtb/ongoing_analysis/lyft-3d-od'
     model_name = 'base_model'
     load_model = True
-    eps = 1e-6
+    model_name = 'model-new-iou-v2'
 
     # The below ranges need to be determined after checking point cloud and box location w.r.t the sensor frame.
     xrange = (-80, 80)

@@ -34,7 +34,7 @@ def main():
             nn.init.xavier_uniform_(p)
 
     if cfg.load_model == True:
-        checkpoint = torch.load(os.path.join(cfg.work_dir, 'data/models/pretrain/model.ckpt'))
+        checkpoint = torch.load(os.path.join(cfg.work_dir, 'data/models/pretrain', cfg.model_name + '.ckpt'))
         model.load_state_dict(checkpoint['state_dict'])
 
     criterion = VoxelLoss()
