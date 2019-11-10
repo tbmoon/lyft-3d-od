@@ -26,7 +26,7 @@ class config:
     ac_length = 3.9
     ac_width = 1.6
     ac_height = 1.56
-    ac_center_z = -0.5
+    ac_center_z = -0.75
     ac_rot_z = 2
 
     # Maximum number of the point clouds in each voxel.
