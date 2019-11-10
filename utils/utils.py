@@ -3,13 +3,36 @@ from lyft_dataset_sdk.utils.data_classes import Quaternion
 from config import config as cfg
 
 
+def delta_to_boxes3d(deltas):
+    # Input:
+    #   - deltas: [batch_size, H_map, W_map, R_z * B_encode = 14]
+    # Ouput:
+    #   - boxes3d: [batch_size, H_map * W_map * R_z, B_encode = 7]
+
+    batch_size = deltas.shape[0]
+    deltas = deltas.reshape(deltas.shape[0], -1, 7)  # deltas: [batch_size, H_map * W_map * R_z, B_encode]    
+    anchors = torch.from_numpy(cfg.anchors).float().to(device)
+    boxes3d = torch.zeros_like(deltas)
+
+    anchors_d = torch.sqrt(anchors[:, 3]**2 + anchors[:, 4]**2)     # anchors_d: [H_map * W_map * R_z]
+    anchors_d = anchors_d.repeat(batch_size, 2, 1).transpose(1, 2)  # anchors_d: [batch_size, H_map * W_map * R_z, B_encode]
+    anchors = anchors.repeat(batch_size, 1, 1)                      # anchors: [batch_size, H_map * W_map * R_z, B_encode]
+
+    # boxes3d: [batch_size, H_map * W_map * R_z, B_encode]
+    boxes3d[..., [0, 1]] = torch.mul(deltas[..., [0, 1]], anchors_d) + anchors[..., [0, 1]]
+    boxes3d[..., [2]] = torch.mul(deltas[..., [2]], anchors[..., [5]]) + anchors[..., [2]]
+    boxes3d[..., [3, 4, 5]] = torch.exp(deltas[..., [3, 4, 5]]) * anchors[..., [3, 4, 5]]
+    boxes3d[..., 6] = torch.asin(deltas[..., 6]) + anchors[..., 6]
+
+    return boxes3d
+
+
 def boxes3d_to_corners(boxes3d, rotate=True):
-    # input - boxes3d: [num_boxes, 7]
-    # - num_boxes = feature_map_size * anchor_two_rotations.
-    # - 7: center_x, center_y, center_z,
-    #      length, width, height,
-    #      yaw
-    # output - boxes2d_corner: [num_boxes, 4 corners, 2 xy]
+    # input:
+    #   - boxes3d: [H_map * W_map * R_z, B_encode]
+    # output:
+    #   - boxes2d_corner: [H_map * W_map * R_z, 4 corners, 2 xy]
+
     num_boxes = boxes3d.shape[0]
     l, w, h = boxes3d[:, 3], boxes3d[:, 4], boxes3d[:, 5]
 
@@ -38,7 +61,7 @@ def boxes3d_to_corners(boxes3d, rotate=True):
 
 def gt_boxes3d_center_to_bottom_corner(gt_boxes3d):
     num_boxes = len(gt_boxes3d)
-    gt_boxes_bottom_corner = np.zeros((num_boxes, 4, 2))  # [num_boxess, 4 bottom corners, 2 xy]    
+    gt_boxes_bottom_corner = np.zeros((num_boxes, 4, 2))  # [num_boxes, 4 bottom corners, 2 xy]    
     for i, gt_box3d in enumerate(gt_boxes3d):
         gt_box_bottom_corner = gt_box3d.bottom_corners()  # [3 xyz, 4 bottom corners]
         gt_box_bottom_corner = gt_box_bottom_corner.transpose(1, 0)[:, :2]  # [4 bottom corners, 2 xy]
