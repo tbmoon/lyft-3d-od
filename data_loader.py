@@ -17,11 +17,13 @@ from utils.iou.box_overlaps import bbox_overlaps
 
 
 class LyftLevel5Dataset(data.Dataset):
-    def __init__(self,
-                 phase):
-        self.df = pd.read_csv(os.path.join(cfg.work_dir, 'data', phase + '.csv'))
-        self.lyft_dataset = LyftDataset(data_path=os.path.join(cfg.input_dir, 'train'),
-                                        json_path=os.path.join(cfg.input_dir, 'train', 'data'),
+    def __init__(self, phase):
+        df_name = phase if phase is not 'test' else 'sample_submission'
+        dataset = 'train' if phase is not 'test' else 'test' 
+        self.phase = phase
+        self.df = pd.read_csv(os.path.join(cfg.work_dir, 'data', df_name + '.csv'))
+        self.lyft_dataset = LyftDataset(data_path=os.path.join(cfg.input_dir, dataset),
+                                        json_path=os.path.join(cfg.input_dir, dataset, 'data'),
                                         verbose=False)
 
     def voxelize_pointclouds(self, pointclouds):
@@ -143,7 +145,8 @@ class LyftLevel5Dataset(data.Dataset):
     def __getitem__(self, idx):
         # Point clouds of lidar are positioned at the sensor frame,
         # while gt_boxes3d at the global frame.
-        sample = self.lyft_dataset.get('sample', self.df['sample_token'][idx])
+        sample_token = 'Id' if self.phase is 'test' else 'sample_token'
+        sample = self.lyft_dataset.get('sample', self.df[sample_token][idx])
         lidar_info = self.lyft_dataset.get('sample_data', sample['data']['LIDAR_TOP'])
         lidar_data_path = self.lyft_dataset.get_sample_data_path(sample['data']['LIDAR_TOP'])        
         gt_boxes3d = self.lyft_dataset.get_boxes(sample['data']['LIDAR_TOP'])
@@ -156,22 +159,30 @@ class LyftLevel5Dataset(data.Dataset):
         # pointclouds: [4 xyzi, num_points] -> [num_points, 4 xyzi]
         pointclouds = pointclouds.points.transpose(1, 0)
 
-        # Convert gt_boxes3d from the global frame to the sensor frame.
-        gt_boxes3d = utils.convert_gt_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibrated_sensor)
+        if self.phase is not 'test':
+            # Convert gt_boxes3d from the global frame to the sensor frame.
+            gt_boxes3d = utils.convert_gt_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibrated_sensor)
 
-        # Data augmentation.
-        #pointclouds, gt_box3d = aug_data(pointclouds, gt_box3d)
+            # Data augmentation.
+            #pointclouds, gt_box3d = aug_data(pointclouds, gt_box3d)
 
-        # Filter point clouds and gt_boxes3d within a specific range and class name.
-        pointclouds, gt_boxes3d = utils.filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d, cfg.class_name)
+            # Filter point clouds and gt_boxes3d within a specific range and class name.
+            pointclouds, gt_boxes3d = utils.filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d, cfg.class_name)
 
-        # Voxelize point clouds.
-        voxel_features, voxel_coords = self.voxelize_pointclouds(pointclouds)
+            # Voxelize point clouds.
+            voxel_features, voxel_coords = self.voxelize_pointclouds(pointclouds)
 
-        # Encode bounding boxes.
-        pos_equal_one, neg_equal_one, targets = self.cal_target(gt_boxes3d)
-        
-        return voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets
+            # Encode bounding boxes.
+            pos_equal_one, neg_equal_one, targets = self.cal_target(gt_boxes3d)
+
+            return voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets
+        else:
+            pointclouds = utils.filter_pointclouds_gt_boxes3d(pointclouds)
+
+            # Voxelize point clouds.
+            voxel_features, voxel_coords = self.voxelize_pointclouds(pointclouds)
+
+            return voxel_features, voxel_coords            
 
     def __len__(self):
         return len(self.df)
@@ -186,20 +197,32 @@ def collate_fn(batch):
 
     for i, sample in enumerate(batch):
         voxel_features.append(sample[0])
-
         voxel_coords.append(
             np.pad(sample[1], ((0, 0), (1, 0)),
                 mode='constant', constant_values=i))
-
         pos_equal_one.append(sample[2])
         neg_equal_one.append(sample[3])
         targets.append(sample[4])
 
     return torch.Tensor(np.concatenate(voxel_features)), \
            torch.LongTensor(np.concatenate(voxel_coords)), \
-           torch.Tensor(np.array(pos_equal_one)),\
-           torch.Tensor(np.array(neg_equal_one)),\
-           torch.Tensor(np.array(targets))        
+           torch.Tensor(np.array(pos_equal_one)), \
+           torch.Tensor(np.array(neg_equal_one)), \
+           torch.Tensor(np.array(targets))
+
+
+def collate_fn_test(batch):
+    voxel_features = []
+    voxel_coords = []
+
+    for i, sample in enumerate(batch):
+        voxel_features.append(sample[0])
+        voxel_coords.append(
+            np.pad(sample[1], ((0, 0), (1, 0)),
+                mode='constant', constant_values=i))
+
+    return torch.Tensor(np.concatenate(voxel_features)), \
+           torch.LongTensor(np.concatenate(voxel_coords))
 
 
 def get_dataloader(phases):
@@ -213,9 +236,9 @@ def get_dataloader(phases):
         phase: torch.utils.data.DataLoader(
             dataset=lyftlevel5_datasets[phase],
             batch_size=cfg.batch_size,
-            shuffle=True if phase is not 'test' or 'check' else False,
+            shuffle=True if phase is not 'test' else False,
             num_workers=cfg.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=collate_fn if phase is not 'test' else collate_fn_test,
             pin_memory=False)
         for phase in phases}
 
