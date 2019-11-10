@@ -33,8 +33,11 @@ def main():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
 
-    criterion = VoxelLoss()
+    if cfg.load_model == True:
+        checkpoint = torch.load(os.path.join(cfg.work_dir, 'data/models/pretrain/model.ckpt'))
+        model.load_state_dict(checkpoint['state_dict'])
 
+    criterion = VoxelLoss()
     optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=cfg.step_size, gamma=cfg.gamma)
 

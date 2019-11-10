@@ -8,17 +8,18 @@ class config:
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
     work_dir = '/home/mtb/ongoing_analysis/lyft-3d-od'
     model_name = 'base_model'
+    load_model = True
     eps = 1e-6
 
     # The below ranges need to be determined after checking point cloud and box location w.r.t the sensor frame.
     xrange = (-80, 80)
     yrange = (-80, 80)
-    zrange = (-3, 1)
+    zrange = (-4, 3)
 
     # Voxel size in meter.
     vox_width = 0.4
     vox_height = 0.4
-    vox_depth = 0.4
+    vox_depth = 0.8
 
     # Geometry of the anchor.
     # ac_length, ac_width, ac_height and ac_center_z in meter.
