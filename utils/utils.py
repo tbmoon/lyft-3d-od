@@ -79,7 +79,7 @@ def convert_gt_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibra
     return gt_boxes3d
 
 
-def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None):
+def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None, class_name=None):
     '''
     Filter pointclouds and/or gt_boxes3d within a specific range.
     '''
@@ -107,7 +107,7 @@ def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None):
         box_z = (gt_boxes3d_corner[:, :, 2] >= cfg.zrange[0]) & (gt_boxes3d_corner[:, :, 2] < cfg.zrange[1])
         box_xyz = np.sum(box_x & box_y & box_z, axis=1)
         box_xyz = np.array([i for i, val in enumerate(box_xyz) if val], dtype=int)
-        gt_boxes3d = [gt_boxes3d[i] for i in box_xyz]
+        gt_boxes3d = [gt_boxes3d[i] for i in box_xyz if gt_boxes3d[i].name == class_name]
 
         return pointclouds, gt_boxes3d
 
