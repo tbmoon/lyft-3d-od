@@ -1,9 +1,10 @@
 import numpy as np
+import torch
 from lyft_dataset_sdk.utils.data_classes import Quaternion
 from config import config as cfg
 
 
-def delta_to_boxes3d(deltas):
+def delta_to_boxes3d(deltas, device):
     # Input:
     #   - deltas: [batch_size, H_map, W_map, R_z * B_encode = 14]
     # Ouput:
