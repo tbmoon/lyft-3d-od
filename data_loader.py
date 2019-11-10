@@ -213,7 +213,7 @@ def get_dataloader(phases):
         phase: torch.utils.data.DataLoader(
             dataset=lyftlevel5_datasets[phase],
             batch_size=cfg.batch_size,
-            shuffle=True if phase is not 'test' else False,
+            shuffle=True if phase is not 'test' or 'check' else False,
             num_workers=cfg.num_workers,
             collate_fn=collate_fn,
             pin_memory=False)
