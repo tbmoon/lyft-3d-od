@@ -162,8 +162,8 @@ class LyftLevel5Dataset(data.Dataset):
         # Data augmentation.
         #pointclouds, gt_box3d = aug_data(pointclouds, gt_box3d)
 
-        # Filter point clouds and gt_boxes3d within a specific range.
-        pointclouds, gt_boxes3d = utils.filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d)
+        # Filter point clouds and gt_boxes3d within a specific range and class name.
+        pointclouds, gt_boxes3d = utils.filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d, cfg.class_name)
 
         # Voxelize point clouds.
         voxel_features, voxel_coords = self.voxelize_pointclouds(pointclouds)
