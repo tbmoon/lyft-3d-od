@@ -45,9 +45,12 @@ class config:
     # Maximum number of the point clouds in each voxel.
     pointclouds_per_vox = 45
 
-    # IOU thresholds of positive and negative anchors. 
-    iou_pos_threshold = 0.6
-    iou_neg_threshold = 0.45
+    # IOU thresholds of positive and negative anchors.
+    # paper: iou threhold of car.
+    #   - iou_pos_threshold = 0.6
+    #   - iou_neg_threshold = 0.45
+    iou_pos_threshold = 0.75
+    iou_neg_threshold = 0.55
 
     # non-maximum suppression
     nms_threshold = 0.1
