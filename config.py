@@ -50,8 +50,12 @@ class config:
     # paper: iou threhold of car.
     #   - iou_pos_threshold = 0.6
     #   - iou_neg_threshold = 0.45
-    iou_pos_threshold = 0.75
-    iou_neg_threshold = 0.55
+    iou_pos_thresholds = {'car': 0.75,
+                          'pedestrian': 0.55}
+    iou_neg_thresholds = {'car': 0.55,
+                          'pedestrian': 0.25}
+    iou_pos_threshold = iou_pos_thresholds[class_name]
+    iou_neg_threshold = iou_neg_thresholds[class_name]
 
     # non-maximum suppression
     nms_threshold = 0.1
