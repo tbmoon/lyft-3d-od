@@ -94,7 +94,7 @@ def main():
             print('\t*- Conf. Loss        : {:.4f}'.format(epoch_conf_loss))
             print('\t*- Reg. Loss         : {:.4f}'.format(epoch_reg_loss))
             print('\t*- Total Loss        : {:.4f}'.format(epoch_total_loss))
-            
+
             # Log the loss in an epoch.
             with open(os.path.join(cfg.work_dir, 'data/logs/{}-log-epoch-{:02}.txt').format(phase, epoch+1), 'w') as f:
                 f.write(str(epoch+1) + '\t' +
@@ -106,7 +106,8 @@ def main():
             if phase == 'train':
                 torch.save({'epoch': epoch+1,
                             'state_dict': model.state_dict()},
-                           os.path.join(cfg.work_dir, 'data/models/model-epoch-{:02d}.ckpt'.format(epoch+1)))
+                           os.path.join(cfg.work_dir,
+                                        'data/models/model-'+cfg.class_name+'-epoch-{:02d}.ckpt'.format(epoch+1)))
 
             time_elapsed = time.time() - since
             print('=> Running time in a epoch: {:.0f}h {:.0f}m {:.0f}s'
