@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import math
 import pandas as pd
 import numpy as np
 import pylab as plt
@@ -37,8 +38,8 @@ sub = {}
 since = time.time()
 for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sensors) \
     in enumerate(data_loaders['test']):
-    
-    if idx == 400:
+
+    if idx == 100:
         break
     voxel_features = voxel_features.to(device)
     voxel_coords = voxel_coords.to(device)
@@ -47,7 +48,7 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
     sample_token = sample_tokens[0]
     ego_pose = ego_poses[0]
     calibrated_sensor = calibrated_sensors[0]
-    
+
     # psm: [batch_size, R_z, H_map, W_map]
     # rm: [batch_size, R_z * B_encode, H_map, W_map]
     psm, rm = model(voxel_features, voxel_coords, device)
@@ -67,7 +68,7 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
 
     # prob: [batch_size, H_map * W_map * R_z]
     prob = psm.view(batch_size, -1)
-    
+
     # batch_boxes3d: [batch_size, H_map * W_map * R_z, B_encode]
     batch_boxes3d = utils.delta_to_boxes3d(rm, device)
 
@@ -85,8 +86,6 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
     boxes3d = boxes3d.cpu().detach().numpy()
     boxes2d_corners = utils.boxes3d_to_corners(boxes3d)
 
-    #print("Predicted 2-D Anchor Boxes:", boxes2d_corners.shape)
-    
     boxes2d = utils.boxes2d_four_corners_to_two_corners(boxes2d_corners)
 
     iou = bbox_overlaps(np.ascontiguousarray(boxes2d).astype(np.float32),
@@ -99,11 +98,13 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
     boxes3d = boxes3d[filter_idc]                  # boxes3d: [#pred_boxes, B_encode=7]
     boxes2d_corners = boxes2d_corners[filter_idc]  # boxes2d_corners: [#pred_boxes, 2 corners]
     #print("Filtered 2-D Anchor Boxes:", boxes2d_corners.shape)
-        
+
     boxes3d = utils.convert_boxes3d_xyzlwhr_to_Box(boxes3d)        
     boxes3d = utils.convert_boxes3d_from_sensor_to_global_frame(boxes3d, ego_pose, calibrated_sensor)
-    
+
     for i in range(len(scores)):
+        if math.isnan(boxes3d[i].orientation.yaw_pitch_roll[0]):
+            continue
         pred = str(scores[i]) + ' ' + \
                str(boxes3d[i].center[0]) + ' ' + \
                str(boxes3d[i].center[1]) + ' ' + \
@@ -113,12 +114,12 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
                str(boxes3d[i].wlh[2]) + ' ' + \
                str(boxes3d[i].orientation.yaw_pitch_roll[0]) + ' ' + \
                str(class_name) + ' '
-        
+
         if sample_token in sub.keys():
             sub[sample_token] += pred
         else:
             sub[sample_token] = pred
-            
+
 time_elapsed = time.time() - since
 print('=> Running time in a epoch: {:.0f}h {:.0f}m {:.0f}s'
       .format(time_elapsed // 3600, (time_elapsed % 3600) // 60, time_elapsed % 60))
