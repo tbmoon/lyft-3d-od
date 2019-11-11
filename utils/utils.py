@@ -120,6 +120,38 @@ def convert_boxes3d_from_sensor_to_global_frame(boxes3d, ego_pose, calibrated_se
     return boxes3d
 
 
+def convert_boxes3d_xyzlwhr_to_Box(boxes3d_xyzlwhr, token=None, name=None, score=0.0):
+    x = boxes3d_xyzlwhr[:, 0]
+    y = boxes3d_xyzlwhr[:, 1]
+    z = boxes3d_xyzlwhr[:, 2]
+    l = boxes3d_xyzlwhr[:, 3]
+    w = boxes3d_xyzlwhr[:, 4]
+    h = boxes3d_xyzlwhr[:, 5]
+    rz = boxes3d_xyzlwhr[:, 6]
+
+    M_rz = np.array([[np.cos(rz),              -np.sin(rz), np.zeros_like(rz)],
+                     [np.sin(rz),               np.cos(rz), np.zeros_like(rz)],
+                     [np.zeros_like(rz), np.zeros_like(rz), np.ones_like(rz)],])
+    M_rz = M_rz.transpose(2, 0, 1)
+    M_rz = R.from_dcm(M_rz)
+
+    quat = M_rz.as_quat()
+    # XYZW -> WXYZ order of elements
+    quat = quat[:, [3,0,1,2]]
+
+    boxes3d = []
+    for i in range(len(gt_boxes3d)):
+        box3d = Box(token=token,
+                    center=[x[i], y[i], z[i]],
+                    size=[w[i], l[i], h[i]],
+                    orientation=Quaternion(quat[i]),
+                    name=name,
+                    score=score)
+        boxes3d.append(box3d)
+
+    return boxes3d
+
+
 def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None, class_name=None):
     '''
     Filter pointclouds and/or gt_boxes3d within a specific range.
