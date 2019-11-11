@@ -186,12 +186,12 @@ class LyftLevel5Dataset(data.Dataset):
             # Voxelize point clouds.
             voxel_features, voxel_coords = self.voxelize_pointclouds(pointclouds)
 
-            return voxel_features, voxel_coords            
+            return voxel_features, voxel_coords, self.df[sample_token][idx], ego_pose, calibrated_sensor
 
     def __len__(self):
         return len(self.df)
 
-        
+
 def collate_fn(batch):
     voxel_features = []
     voxel_coords = []
@@ -221,15 +221,24 @@ def collate_fn(batch):
 def collate_fn_test(batch):
     voxel_features = []
     voxel_coords = []
+    sample_tokens = []
+    ego_poses = []
+    calibrated_sensors = []
 
     for i, sample in enumerate(batch):
         voxel_features.append(sample[0])
         voxel_coords.append(
             np.pad(sample[1], ((0, 0), (1, 0)),
                 mode='constant', constant_values=i))
+        sample_tokens.append(sample[2])
+        ego_poses.append(sample[3])
+        calibrated_sensors.append(sample[4])
 
     return torch.Tensor(np.concatenate(voxel_features)), \
-           torch.LongTensor(np.concatenate(voxel_coords))
+           torch.LongTensor(np.concatenate(voxel_coords)), \
+           sample_tokens, \
+           ego_poses, \
+           calibrated_sensors
 
 
 def get_dataloader(phases):
