@@ -42,8 +42,8 @@ class config:
                    'pedestrian': 0.3}
     vox_heights = {'car': 0.4,
                    'pedestrian': 0.3}
-    vox_width = vox_widths
-    vox_height = vox_heights
+    vox_width = vox_widths[class_name]
+    vox_height = vox_heights[class_name]
     vox_depth = 0.8
 
     # Geometry of the anchor.
