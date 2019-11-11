@@ -75,8 +75,8 @@ class config:
     clip_grad_thres = 8.4
 
     # Optimizer parameters.
-    learning_rate = 0.001
-    step_size = 5
+    learning_rate = 0.0001
+    step_size = 2
     gamma = 0.1
     accumulation_steps = 64
 
