@@ -1,6 +1,7 @@
 import numpy as np
 import torch
-from lyft_dataset_sdk.utils.data_classes import Quaternion
+from scipy.spatial.transform import Rotation as R
+from lyft_dataset_sdk.utils.data_classes import Box, Quaternion
 from config import config as cfg
 
 
@@ -140,7 +141,7 @@ def convert_boxes3d_xyzlwhr_to_Box(boxes3d_xyzlwhr, token=None, name=None, score
     quat = quat[:, [3,0,1,2]]
 
     boxes3d = []
-    for i in range(len(gt_boxes3d)):
+    for i in range(len(boxes3d_xyzlwhr)):
         box3d = Box(token=token,
                     center=[x[i], y[i], z[i]],
                     size=[w[i], l[i], h[i]],
