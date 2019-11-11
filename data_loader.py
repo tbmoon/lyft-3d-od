@@ -165,7 +165,7 @@ class LyftLevel5Dataset(data.Dataset):
 
         if self.phase is not 'test':
             # Convert gt_boxes3d from the global frame to the sensor frame.
-            gt_boxes3d = utils.convert_gt_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibrated_sensor)
+            gt_boxes3d = utils.convert_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibrated_sensor)
 
             # Data augmentation.
             #pointclouds, gt_box3d = aug_data(pointclouds, gt_box3d)

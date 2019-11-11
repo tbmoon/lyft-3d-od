@@ -86,21 +86,21 @@ def boxes2d_four_corners_to_two_corners(boxes2d_corner):
     return boxes2d_two_corner
 
 
-def convert_gt_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibrated_sensor):
+def convert_boxes3d_from_global_to_sensor_frame(boxes3d, ego_pose, calibrated_sensor):
     '''
-    Convert gt_boxes3d from the global frame to the sensor frame.
+    Convert boxes3d from the global frame to the sensor frame.
     '''
     # From the global frame to the car frame.
-    for gt_box3d in gt_boxes3d:
-        gt_box3d.translate(-np.array(ego_pose['translation']))
-        gt_box3d.rotate(Quaternion(ego_pose['rotation']).inverse)
+    for box3d in boxes3d:
+        box3d.translate(-np.array(ego_pose['translation']))
+        box3d.rotate(Quaternion(ego_pose['rotation']).inverse)
 
     # From the car frame to the sensor frame.
-    for gt_box3d in gt_boxes3d:
-        gt_box3d.translate(-np.array(calibrated_sensor["translation"]))
-        gt_box3d.rotate(Quaternion(calibrated_sensor["rotation"]).inverse)
+    for box3d in boxes3d:
+        box3d.translate(-np.array(calibrated_sensor["translation"]))
+        box3d.rotate(Quaternion(calibrated_sensor["rotation"]).inverse)
 
-    return gt_boxes3d
+    return boxes3d
 
 
 def convert_boxes3d_from_sensor_to_global_frame(boxes3d, ego_pose, calibrated_sensor):
