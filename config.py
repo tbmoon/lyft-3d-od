@@ -58,7 +58,7 @@ class config:
     # paper: iou threhold of car.
     #   - iou_pos_threshold = 0.6
     #   - iou_neg_threshold = 0.45
-    iou_pos_thresholds = {'car': 0.75,
+    iou_pos_thresholds = {'car': 0.85,
                           'pedestrian': 0.55}
     iou_neg_thresholds = {'car': 0.55,
                           'pedestrian': 0.25}
