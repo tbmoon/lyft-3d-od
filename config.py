@@ -26,7 +26,7 @@ class config:
     work_dir = '/home/mtb/ongoing_analysis/lyft-3d-od'
     model_name = 'base_model'
     load_model = True
-    model_name = 'model-new-iou-v2'
+    model_name = 'model-car-v0'
 
     # The below ranges need to be determined after checking point cloud and box location w.r.t the sensor frame.
     xrange = (-80, 80)
