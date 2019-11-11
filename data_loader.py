@@ -72,14 +72,14 @@ class LyftLevel5Dataset(data.Dataset):
         try:
             # Only taken into account rotation around yaw axis.
             # It means bottom-corners equal to top-corner.
-            ac_boxes2d_corners = utils.boxes3d_to_corners(cfg.anchors)
             gt_boxes2d_corners = utils.boxes3d_to_corners(gt_boxes3d_xyzlwhr)
         except Exception as e:
             return pos_equal_one, neg_equal_one, targets, False
 
+        ac_boxes2d_corners = utils.boxes3d_to_corners(cfg.anchors)
         ac_boxes2d = utils.boxes2d_four_corners_to_two_corners(ac_boxes2d_corners)
         gt_boxes2d = utils.boxes2d_four_corners_to_two_corners(gt_boxes2d_corners) 
-        
+
         # iou: [num_ac_boxes2d, num_gt_boxes2d]
         iou = bbox_overlaps(np.ascontiguousarray(ac_boxes2d).astype(np.float32),
                             np.ascontiguousarray(gt_boxes2d).astype(np.float32))

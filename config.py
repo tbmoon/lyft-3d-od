@@ -29,11 +29,19 @@ class config:
     model_name = 'model-car-v0'
 
     # The below ranges need to be determined after checking point cloud and box location w.r.t the sensor frame.
-    xrange = (-80, 80)
-    yrange = (-80, 80)
+    xranges = {'car': (-80, 80),
+               'pedestrian': (-60, 60)}
+    yranges = {'car': (-80, 80),
+               'pedestrian': (-60, 60)}
+    xrange = xranges[class_name]
+    yrange = yranges[class_name]
     zrange = (-4, 3)
 
     # Voxel size in meter.
+    vox_widths  = {'car': 0.4,
+                   'pedestrian': 0.3}
+    vox_heights = {'car': 0.4,
+                   'pedestrian': 0.3}
     vox_width = 0.4
     vox_height = 0.4
     vox_depth = 0.8
