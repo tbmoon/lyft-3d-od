@@ -68,10 +68,14 @@ class LyftLevel5Dataset(data.Dataset):
                                         gt_box3d.wlh[2],
                                         gt_box3d.orientation.yaw_pitch_roll[0]] for gt_box3d in gt_boxes3d])
 
-        # Only taken into account rotation around yaw axis.
-        # It means bottom-corners equal to top-corner.
-        ac_boxes2d_corners = utils.boxes3d_to_corners(cfg.anchors)
-        gt_boxes2d_corners = utils.boxes3d_to_corners(gt_boxes3d_xyzlwhr)
+        # Some class is not included in dataset.
+        try:
+            # Only taken into account rotation around yaw axis.
+            # It means bottom-corners equal to top-corner.
+            ac_boxes2d_corners = utils.boxes3d_to_corners(cfg.anchors)
+            gt_boxes2d_corners = utils.boxes3d_to_corners(gt_boxes3d_xyzlwhr)
+        except Exception as e:
+            return pos_equal_one, neg_equal_one, targets, False
 
         ac_boxes2d = utils.boxes2d_four_corners_to_two_corners(ac_boxes2d_corners)
         gt_boxes2d = utils.boxes2d_four_corners_to_two_corners(gt_boxes2d_corners) 
@@ -139,7 +143,7 @@ class LyftLevel5Dataset(data.Dataset):
             id_highest, (*cfg.feature_map_shape, cfg.ac_rot_z))
         neg_equal_one[index_x, index_y, index_z] = 0
 
-        return pos_equal_one, neg_equal_one, targets
+        return pos_equal_one, neg_equal_one, targets, True
 
 
     def __getitem__(self, idx):
@@ -173,9 +177,9 @@ class LyftLevel5Dataset(data.Dataset):
             voxel_features, voxel_coords = self.voxelize_pointclouds(pointclouds)
 
             # Encode bounding boxes.
-            pos_equal_one, neg_equal_one, targets = self.cal_target(gt_boxes3d)
+            pos_equal_one, neg_equal_one, targets, exception = self.cal_target(gt_boxes3d)
 
-            return voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets
+            return voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets, exception
         else:
             pointclouds = utils.filter_pointclouds_gt_boxes3d(pointclouds)
 
@@ -194,6 +198,7 @@ def collate_fn(batch):
     pos_equal_one = []
     neg_equal_one = []
     targets = []
+    exception = []
 
     for i, sample in enumerate(batch):
         voxel_features.append(sample[0])
@@ -203,12 +208,14 @@ def collate_fn(batch):
         pos_equal_one.append(sample[2])
         neg_equal_one.append(sample[3])
         targets.append(sample[4])
-
+        exception.append(sample[5])
+        
     return torch.Tensor(np.concatenate(voxel_features)), \
            torch.LongTensor(np.concatenate(voxel_coords)), \
            torch.Tensor(np.array(pos_equal_one)), \
            torch.Tensor(np.array(neg_equal_one)), \
-           torch.Tensor(np.array(targets))
+           torch.Tensor(np.array(targets)), \
+           np.array(exception)
 
 
 def collate_fn_test(batch):

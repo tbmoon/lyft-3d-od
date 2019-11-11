@@ -44,6 +44,7 @@ def main():
     for epoch in range(cfg.num_epochs):
         for phase in ['train', 'valid']:
             since = time.time()
+            data_size = 0
             running_conf_loss = 0.0
             running_reg_loss = 0.0
             running_total_loss = 0.0
@@ -54,8 +55,11 @@ def main():
                 model.eval()
 
             optimizer.zero_grad()
-            for idx, (voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets) \
+            for idx, (voxel_features, voxel_coords, pos_equal_one, neg_equal_one, targets, exception) \
                 in enumerate(data_loaders[phase]):
+                if exception == False:
+                    continue
+                data_size += 1
 
                 voxel_features = voxel_features.to(device)
                 pos_equal_one = pos_equal_one.to(device)
@@ -82,9 +86,9 @@ def main():
                     running_reg_loss += reg_loss.item()
                     running_total_loss += total_loss.item()
 
-            epoch_conf_loss = running_conf_loss / data_sizes[phase]
-            epoch_reg_loss = running_reg_loss / data_sizes[phase]
-            epoch_total_loss = running_total_loss / data_sizes[phase]
+            epoch_conf_loss = running_conf_loss / data_size
+            epoch_reg_loss = running_reg_loss / data_size
+            epoch_total_loss = running_total_loss / data_size
 
             print('| {} SET | Epoch [{:02d}/{:02d}]'.format(phase.upper(), epoch+1, cfg.num_epochs))
             print('\t*- Conf. Loss        : {:.4f}'.format(epoch_conf_loss))
