@@ -52,7 +52,7 @@ class config:
     ac_rot_z = 2
 
     # Maximum number of the point clouds in each voxel.
-    pointclouds_per_vox = 45
+    pointclouds_per_vox = 40
 
     # IOU thresholds of positive and negative anchors.
     # paper: iou threhold of car.
