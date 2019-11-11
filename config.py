@@ -29,19 +29,19 @@ class config:
     model_name = 'model-{}-{}'.format(class_name, version)
 
     # The below ranges need to be determined after checking point cloud and box location w.r.t the sensor frame.
-    xranges = {'car': (-80, 80),
-               'pedestrian': (-60, 60)}
-    yranges = {'car': (-80, 80),
-               'pedestrian': (-60, 60)}
+    xranges = {'car': (-75, 75),
+               'pedestrian': (-55, 55)}
+    yranges = {'car': (-75, 75),
+               'pedestrian': (-55, 55)}
     xrange = xranges[class_name]
     yrange = yranges[class_name]
     zrange = (-4, 3)
 
     # Voxel size in meter.
-    vox_widths  = {'car': 0.4,
-                   'pedestrian': 0.3}
-    vox_heights = {'car': 0.4,
-                   'pedestrian': 0.3}
+    vox_widths  = {'car': 0.375,
+                   'pedestrian': 0.275}
+    vox_heights = {'car': 0.375,
+                   'pedestrian': 0.275}
     vox_width = vox_widths[class_name]
     vox_height = vox_heights[class_name]
     vox_depth = 0.8
@@ -52,7 +52,7 @@ class config:
     ac_rot_z = 2
 
     # Maximum number of the point clouds in each voxel.
-    pointclouds_per_vox = 40
+    pointclouds_per_vox = 35
 
     # IOU thresholds of positive and negative anchors.
     # paper: iou threhold of car.
