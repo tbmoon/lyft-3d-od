@@ -24,7 +24,6 @@ class config:
     eps = 1e-6
     input_dir = '/run/media/hoosiki/WareHouse1/mtb/datasets/lyft-3d-od'
     work_dir = '/home/mtb/ongoing_analysis/lyft-3d-od'
-    model_name = 'base_model'
     load_model = True
     model_name = 'model-car-v0'
 
