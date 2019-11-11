@@ -103,6 +103,23 @@ def convert_gt_boxes3d_from_global_to_sensor_frame(gt_boxes3d, ego_pose, calibra
     return gt_boxes3d
 
 
+def convert_boxes3d_from_sensor_to_global_frame(boxes3d, ego_pose, calibrated_sensor):
+    '''
+    Convert boxes3d from the sensor frame to the global frame.
+    '''
+    # From the sensor frame to the car frame.
+    for box3d in boxes3d:
+        box3d.rotate(Quaternion(calibrated_sensor["rotation"]))
+        box3d.translate(np.array(calibrated_sensor["translation"]))
+
+    # From the car frame to the global frame.
+    for box3d in boxes3d:
+        box3d.rotate(Quaternion(ego_pose['rotation']))
+        box3d.translate(np.array(ego_pose['translation']))
+
+    return boxes3d
+
+
 def filter_pointclouds_gt_boxes3d(pointclouds, gt_boxes3d=None, class_name=None):
     '''
     Filter pointclouds and/or gt_boxes3d within a specific range.
