@@ -65,9 +65,10 @@ class config:
     iou_pos_threshold = iou_pos_thresholds[class_name]
     iou_neg_threshold = iou_neg_thresholds[class_name]
 
-    # non-maximum suppression
-    nms_threshold = 0.1
-    score_threshold = 0.96
+    # score_threshold for classification.
+    score_thresholds = {'car': 0.999,
+                        'pedestrian': 0.999}
+    score_threshold = score_thresholds[class_name]
 
     # Loss parameters.
     alpha = 0.5
