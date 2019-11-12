@@ -108,8 +108,8 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
                str(boxes3d[i].center[0]) + ' ' + \
                str(boxes3d[i].center[1]) + ' ' + \
                str(boxes3d[i].center[2]) + ' ' + \
-               str(boxes3d[i].wlh[1]) + ' ' + \
                str(boxes3d[i].wlh[0]) + ' ' + \
+               str(boxes3d[i].wlh[1]) + ' ' + \
                str(boxes3d[i].wlh[2]) + ' ' + \
                str(boxes3d[i].orientation.yaw_pitch_roll[0]) + ' ' + \
                str(class_name) + ' '
