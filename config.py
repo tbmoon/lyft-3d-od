@@ -19,7 +19,7 @@ class config:
     #
     # Select one of them!
     class_name = 'car'
-    version = 'v2'
+    version = 'v3'
 
     # Global parameters.
     eps = 1e-6
@@ -30,8 +30,10 @@ class config:
 
     # The below ranges need to be determined after checking point cloud and box location w.r.t the sensor frame.
     xranges = {'car': (-75, 75),
+               'truck': (-75, 75),
                'pedestrian': (-55, 55)}
     yranges = {'car': (-75, 75),
+               'truck': (-75, 75),
                'pedestrian': (-55, 55)}
     xrange = xranges[class_name]
     yrange = yranges[class_name]
@@ -39,8 +41,10 @@ class config:
 
     # Voxel size in meter.
     vox_widths  = {'car': 0.375,
+                   'truck': 0.375,
                    'pedestrian': 0.275}
     vox_heights = {'car': 0.375,
+                   'truck': 0.375,
                    'pedestrian': 0.275}
     vox_width = vox_widths[class_name]
     vox_height = vox_heights[class_name]
@@ -59,14 +63,17 @@ class config:
     #   - iou_pos_threshold = 0.6
     #   - iou_neg_threshold = 0.45
     iou_pos_thresholds = {'car': 0.85,
+                          'truck': 0.95,
                           'pedestrian': 0.55}
     iou_neg_thresholds = {'car': 0.55,
+                          'truck': 0.65,
                           'pedestrian': 0.25}
     iou_pos_threshold = iou_pos_thresholds[class_name]
     iou_neg_threshold = iou_neg_thresholds[class_name]
 
     # score_threshold for classification.
     score_thresholds = {'car': 0.999,
+                        'truck': 0.999,
                         'pedestrian': 0.999}
     score_threshold = score_thresholds[class_name]
 
