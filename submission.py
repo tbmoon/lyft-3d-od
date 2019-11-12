@@ -89,32 +89,39 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
 
     boxes2d = utils.boxes2d_four_corners_to_two_corners(boxes2d_corners)
 
-    iou = bbox_overlaps(np.ascontiguousarray(boxes2d).astype(np.float32),
-                        np.ascontiguousarray(boxes2d).astype(np.float32))
+    try:
+        iou = bbox_overlaps(np.ascontiguousarray(boxes2d).astype(np.float32),
+                            np.ascontiguousarray(boxes2d).astype(np.float32))
 
-    scores = scores.cpu().detach().numpy()
-    filter_idc = np.argmax((iou > collision_iou_threshold) * scores, axis=1)
-    filter_idc = np.unique(filter_idc)
-    scores = scores[filter_idc]                    # scores: [#pred_boxes, ]
-    boxes3d = boxes3d[filter_idc]                  # boxes3d: [#pred_boxes, B_encode=7]
-    boxes2d_corners = boxes2d_corners[filter_idc]  # boxes2d_corners: [#pred_boxes, 2 corners]
+        scores = scores.cpu().detach().numpy()
+        filter_idc = np.argmax((iou > collision_iou_threshold) * scores, axis=1)
+        filter_idc = np.unique(filter_idc)
+        scores = scores[filter_idc]                    # scores: [#pred_boxes, ]
+        boxes3d = boxes3d[filter_idc]                  # boxes3d: [#pred_boxes, B_encode=7]
+        boxes2d_corners = boxes2d_corners[filter_idc]  # boxes2d_corners: [#pred_boxes, 2 corners]
 
-    boxes3d = utils.convert_boxes3d_xyzlwhr_to_Box(boxes3d)        
-    boxes3d = utils.convert_boxes3d_from_sensor_to_global_frame(boxes3d, ego_pose, calibrated_sensor)
+        boxes3d = utils.convert_boxes3d_xyzlwhr_to_Box(boxes3d)        
+        boxes3d = utils.convert_boxes3d_from_sensor_to_global_frame(boxes3d, ego_pose, calibrated_sensor)
 
-    for i in range(len(scores)):
-        if math.isnan(boxes3d[i].orientation.yaw_pitch_roll[0]):
-            continue
-        pred = str(scores[i]) + ' ' + \
-               str(boxes3d[i].center[0]) + ' ' + \
-               str(boxes3d[i].center[1]) + ' ' + \
-               str(boxes3d[i].center[2]) + ' ' + \
-               str(boxes3d[i].wlh[0]) + ' ' + \
-               str(boxes3d[i].wlh[1]) + ' ' + \
-               str(boxes3d[i].wlh[2]) + ' ' + \
-               str(boxes3d[i].orientation.yaw_pitch_roll[0]) + ' ' + \
-               str(class_name) + ' '
+        for i in range(len(scores)):
+            if math.isnan(boxes3d[i].orientation.yaw_pitch_roll[0]):
+                continue
+            pred = str(scores[i]) + ' ' + \
+                   str(boxes3d[i].center[0]) + ' ' + \
+                   str(boxes3d[i].center[1]) + ' ' + \
+                   str(boxes3d[i].center[2]) + ' ' + \
+                   str(boxes3d[i].wlh[0]) + ' ' + \
+                   str(boxes3d[i].wlh[1]) + ' ' + \
+                   str(boxes3d[i].wlh[2]) + ' ' + \
+                   str(boxes3d[i].orientation.yaw_pitch_roll[0]) + ' ' + \
+                   str(class_name) + ' '
 
+            if sample_token in sub.keys():
+                sub[sample_token] += pred
+            else:
+                sub[sample_token] = pred
+    except ValueError:
+        pred = '0 0 0 0 1 1 1 0 car '
         if sample_token in sub.keys():
             sub[sample_token] += pred
         else:
