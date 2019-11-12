@@ -21,12 +21,12 @@ from models import VoxelNet
 
 
 class_name = 'car'
-version = 'v2'
-score_threshold = 0.999
+version = 'v3'
+score_threshold = cfg.score_threshold
 
-collision_iou_threshold = 0.2
+collision_iou_threshold = cfg.collision_iou_threshold
 pretrained_model = 'model-{}-{}.ckpt'.format(class_name, version)
-device = torch.device('cuda:1')
+device = torch.device('cuda:0')
 
 data_loaders, data_sizes = get_dataloader(phases=['test'])
 model = VoxelNet().to(device)
@@ -39,7 +39,7 @@ since = time.time()
 for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sensors) \
     in enumerate(data_loaders['test']):
 
-    if idx == 100:
+    if idx == 1000000:
         break
     voxel_features = voxel_features.to(device)
     voxel_coords = voxel_coords.to(device)
@@ -97,7 +97,6 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
     scores = scores[filter_idc]                    # scores: [#pred_boxes, ]
     boxes3d = boxes3d[filter_idc]                  # boxes3d: [#pred_boxes, B_encode=7]
     boxes2d_corners = boxes2d_corners[filter_idc]  # boxes2d_corners: [#pred_boxes, 2 corners]
-    #print("Filtered 2-D Anchor Boxes:", boxes2d_corners.shape)
 
     boxes3d = utils.convert_boxes3d_xyzlwhr_to_Box(boxes3d)        
     boxes3d = utils.convert_boxes3d_from_sensor_to_global_frame(boxes3d, ego_pose, calibrated_sensor)
@@ -127,4 +126,4 @@ print('=> Running time in a epoch: {:.0f}h {:.0f}m {:.0f}s'
 sample_sub = pd.read_csv(os.path.join(cfg.work_dir, 'data/sample_submission.csv'))
 sub = pd.DataFrame(list(sub.items()))
 sub.columns = sample_sub.columns
-sub.to_csv('lyft3d_pred.csv',index=False)
+sub.to_csv(os.path.join(cfg.work_dir, 'data/submissions/submission-' + class_name + '-' + version + '.csv'), index=False)
