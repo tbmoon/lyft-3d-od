@@ -70,6 +70,9 @@ class config:
                         'pedestrian': 0.999}
     score_threshold = score_thresholds[class_name]
 
+    # remove overlapping prediction.
+    collision_iou_threshold = 0.2
+
     # Loss parameters.
     alpha = 0.5
     beta = 1
