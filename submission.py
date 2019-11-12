@@ -21,7 +21,7 @@ from models import VoxelNet
 
 
 class_name = 'car'
-version = 'v3'
+version = 'v4'
 score_threshold = cfg.score_threshold
 
 collision_iou_threshold = cfg.collision_iou_threshold
