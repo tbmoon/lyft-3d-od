@@ -128,7 +128,7 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
             else:
                 sub[sample_token] = pred
     except ValueError:
-        pred = '0 0 0 0 1 1 1 0 car '
+        pred = '0.0001 2325.3639141771573 896.5050445940944 -17.888648146863467 1.8942416 4.564969 1.6333789 2.5251263265025563 car '
         if sample_token in sub.keys():
             sub[sample_token] += pred
         else:
