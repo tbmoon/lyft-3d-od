@@ -106,6 +106,13 @@ for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sen
         for i in range(len(scores)):
             if math.isnan(boxes3d[i].orientation.yaw_pitch_roll[0]):
                 continue
+            if boxes3d[i].wlh[0] < 0.1 or boxes3d[i].wlh[0] > 10:
+                continue
+            if boxes3d[i].wlh[1] < 0.1 or boxes3d[i].wlh[1] > 10:
+                continue
+            if boxes3d[i].wlh[2] < 0.1 or boxes3d[i].wlh[2] > 10:
+                continue
+
             pred = str(scores[i]) + ' ' + \
                    str(boxes3d[i].center[0]) + ' ' + \
                    str(boxes3d[i].center[1]) + ' ' + \
