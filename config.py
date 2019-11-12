@@ -19,7 +19,7 @@ class config:
     #
     # Select one of them!
     class_name = 'car'
-    version = 'v3'
+    version = 'v4'
 
     # Global parameters.
     eps = 1e-6
