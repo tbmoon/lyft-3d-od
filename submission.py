@@ -39,8 +39,9 @@ since = time.time()
 for idx, (voxel_features, voxel_coords, sample_tokens, ego_poses, calibrated_sensors) \
     in enumerate(data_loaders['test']):
 
-    if idx == 1000000:
-        break
+    if idx % 1000 == 0:
+        print('idx', idx)
+
     voxel_features = voxel_features.to(device)
     voxel_coords = voxel_coords.to(device)
 
